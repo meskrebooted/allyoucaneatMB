@@ -1,0 +1,23 @@
+[
+  { "Id": 1,  "Nome": "Nigiri salmone",            "Categoria": "Nigiri",    "Disponibile": true },
+  { "Id": 2,  "Nome": "Nigiri tonno",              "Categoria": "Nigiri",    "Disponibile": true },
+  { "Id": 3,  "Nome": "Nigiri gambero",            "Categoria": "Nigiri",    "Disponibile": true },
+  { "Id": 4,  "Nome": "Nigiri branzino",           "Categoria": "Nigiri",    "Disponibile": true },
+  { "Id": 5,  "Nome": "Sashimi salmone",           "Categoria": "Sashimi",   "Disponibile": true },
+  { "Id": 6,  "Nome": "Sashimi tonno",             "Categoria": "Sashimi",   "Disponibile": true },
+  { "Id": 7,  "Nome": "Hosomaki cetriolo",         "Categoria": "Hosomaki",  "Disponibile": true },
+  { "Id": 8,  "Nome": "Hosomaki salmone",          "Categoria": "Hosomaki",  "Disponibile": true },
+  { "Id": 9,  "Nome": "Uramaki California",        "Categoria": "Uramaki",   "Disponibile": true },
+  { "Id": 10, "Nome": "Uramaki Philadelphia",      "Categoria": "Uramaki",   "Disponibile": true },
+  { "Id": 11, "Nome": "Uramaki spicy tonno",       "Categoria": "Uramaki",   "Disponibile": true },
+  { "Id": 12, "Nome": "Uramaki tempura gambero",   "Categoria": "Uramaki",   "Disponibile": true },
+  { "Id": 13, "Nome": "Temaki salmone e avocado",  "Categoria": "Temaki",    "Disponibile": true },
+  { "Id": 14, "Nome": "Gyoza di carne",            "Categoria": "Antipasti", "Disponibile": true },
+  { "Id": 15, "Nome": "Edamame",                   "Categoria": "Antipasti", "Disponibile": true },
+  { "Id": 16, "Nome": "Involtini primavera",       "Categoria": "Antipasti", "Disponibile": true },
+  { "Id": 17, "Nome": "Insalata di alghe wakame",  "Categoria": "Antipasti", "Disponibile": true },
+  { "Id": 18, "Nome": "Tempura di gamberi",        "Categoria": "Tempura",   "Disponibile": true },
+  { "Id": 19, "Nome": "Tempura di verdure",        "Categoria": "Tempura",   "Disponibile": true },
+  { "Id": 20, "Nome": "Mochi",                     "Categoria": "Dessert",   "Disponibile": true },
+  { "Id": 21, "Nome": "Gelato fritto",             "Categoria": "Dessert",   "Disponibile": true }
+]

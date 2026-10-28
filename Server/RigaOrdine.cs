@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace allyoucaneat
 {
-    internal class RigaOrdine
+    public class RigaOrdine
     {
+        public int PiattoId { get; set; }
+        public string NomePiatto { get; set; }
+        public int Quantita { get; set; }
     }
 }

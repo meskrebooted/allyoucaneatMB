@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace allyoucaneat
 {
-    internal class Piatto
+    public class Piatto
     {
+        public int Id { get; set; }
+        public string Nome { get; set; }
+        public string Categoria { get; set; }
+        public bool Disponibile { get; set; } = true;
     }
 }

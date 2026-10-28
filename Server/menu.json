@@ -1,4 +1,4 @@
-﻿[
+[
   { "Id": 1,  "Nome": "Nigiri salmone",            "Categoria": "Nigiri",    "Disponibile": true },
   { "Id": 2,  "Nome": "Nigiri tonno",              "Categoria": "Nigiri",    "Disponibile": true },
   { "Id": 3,  "Nome": "Nigiri gambero",            "Categoria": "Nigiri",    "Disponibile": true },

@@ -20,6 +20,8 @@ namespace allyoucaneat
         private readonly List<Ordine> _ordini = new List<Ordine>();
         private List<Piatto> _menu = new List<Piatto>();
 
+        private const int MaxClienti = 100;
+
         private Socket _listener;
         private Thread _threadAccept;
         private volatile bool _inEsecuzione;
@@ -57,8 +59,9 @@ namespace allyoucaneat
             Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
             {
+                listener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 listener.Bind(new IPEndPoint(IPAddress.Any, porta));
-                listener.Listen(10);
+                listener.Listen(MaxClienti);
             }
             catch
             {
@@ -107,6 +110,18 @@ namespace allyoucaneat
                 try
                 {
                     Socket socket = _listener.Accept();
+
+                    int connessi;
+                    lock (_lock)
+                    {
+                        connessi = _connessi.Count;
+                    }
+                    if (connessi >= MaxClienti)
+                    {
+                        ScriviLog("Connessione rifiutata: massimo " + MaxClienti + " clienti raggiunto");
+                        try { socket.Close(); } catch { }
+                        continue;
+                    }
 
                     ClientManager cm = new ClientManager(socket, this);
                     lock (_lock)

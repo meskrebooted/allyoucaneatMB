@@ -22,6 +22,14 @@ namespace allyoucaneat
 
         private const int MaxClienti = 100;
 
+        private readonly string _percorsoOrdini;
+
+        public Server()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            _percorsoOrdini = Path.Combine(baseDir, "ordini.json");
+        }
+
         private Socket _listener;
         private Thread _threadAccept;
         private volatile bool _inEsecuzione;
@@ -55,6 +63,7 @@ namespace allyoucaneat
         private void AvviaInterno(int porta)
         {
             CaricaMenu();
+            CaricaOrdini();
 
             Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
@@ -94,6 +103,7 @@ namespace allyoucaneat
             foreach (ClientManager c in copia)
                 c.Chiudi();
 
+            SalvaOrdini();
             ScriviLog("Server fermato");
         }
 
@@ -170,6 +180,54 @@ namespace allyoucaneat
             lock (_lock)
             {
                 return new List<Piatto>(_menu);
+            }
+        }
+
+        // ---------- Persistenza ordini ----------
+
+        private void CaricaOrdini()
+        {
+            try
+            {
+                if (!File.Exists(_percorsoOrdini))
+                    return;
+
+                string json = File.ReadAllText(_percorsoOrdini, Encoding.UTF8);
+                List<Ordine> ordini = JsonConvert.DeserializeObject<List<Ordine>>(json);
+                if (ordini != null)
+                {
+                    lock (_lock)
+                    {
+                        _ordini.Clear();
+                        foreach (Ordine o in ordini)
+                            _ordini.Add(o);
+                    }
+                    ScriviLog("Ordini ripristinati: " + _ordini.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                ScriviLog("Errore nel ripristino degli ordini: " + ex.Message);
+            }
+        }
+
+        private void SalvaOrdini()
+        {
+            try
+            {
+                List<Ordine> copia;
+                lock (_lock)
+                {
+                    copia = new List<Ordine>(_ordini);
+                }
+                string json = JsonConvert.SerializeObject(copia, Formatting.Indented);
+                string tmp = _percorsoOrdini + ".tmp";
+                File.WriteAllText(tmp, json, Encoding.UTF8);
+                File.Move(tmp, _percorsoOrdini);
+            }
+            catch (Exception ex)
+            {
+                ScriviLog("Errore nel salvataggio degli ordini: " + ex.Message);
             }
         }
 

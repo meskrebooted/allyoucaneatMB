@@ -184,6 +184,12 @@ namespace allyoucaneat
             }
         }
 
+        // Ricarica il menu da menu.json (chiamato dalla form).
+        public void RicaricaMenu()
+        {
+            CaricaMenu();
+        }
+
         // ---------- Persistenza ordini ----------
 
         private void CaricaOrdini()
@@ -230,6 +236,25 @@ namespace allyoucaneat
             {
                 ScriviLog("Errore nel salvataggio degli ordini: " + ex.Message);
             }
+        }
+
+        // Rimuove definitivamente gli ordini giu00e0 serviti (pulizia periodica).
+        public int RimuoviOrdiniServiti()
+        {
+            List<Ordine> daRimuovere;
+            lock (_lock)
+            {
+                daRimuovere = _ordini.Where(o => o.Stato == StatoOrdine.Servito).ToList();
+                foreach (Ordine o in daRimuovere)
+                    _ordini.Remove(o);
+            }
+
+            if (daRimuovere.Count > 0)
+            {
+                SalvaOrdini();
+                ScriviLog("Rimossi " + daRimuovere.Count + " ordine/i servito/i");
+            }
+            return daRimuovere.Count;
         }
 
         // ---------- Chiamati dai ClientManager ----------

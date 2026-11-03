@@ -39,6 +39,7 @@ namespace allyoucaneat
         public event Action<Ordine> OrdineRicevuto;
         public event Action<int> TavoloConnesso;
         public event Action<int> TavoloDisconnesso;
+        public event Action<Ordine, StatoOrdine> OrdineStatoCambiato;
 
         public bool InEsecuzione { get { return _inEsecuzione; } }
 
@@ -289,8 +290,12 @@ namespace allyoucaneat
         // Cambia lo stato di un ordine e avvisa il tablet del tavolo.
         public bool CambiaStato(string idOrdine, StatoOrdine stato)
         {
+            if (string.IsNullOrEmpty(idOrdine))
+                return false;
+
             Ordine ordine;
             ClientManager cm;
+            StatoOrdine statoPrecedente;
 
             lock (_lock)
             {
@@ -298,9 +303,22 @@ namespace allyoucaneat
                 if (ordine == null)
                     return false;
 
+                if (!TransizioneValida(ordine.Stato, stato))
+                {
+                    ScriviLog("Transizione non valida per ordine " + idOrdine + ": " +
+                              ordine.Stato + " -> " + stato);
+                    return false;
+                }
+
+                statoPrecedente = ordine.Stato;
                 ordine.Stato = stato;
                 _tavoli.TryGetValue(ordine.Tavolo, out cm);
             }
+
+            SalvaOrdini();
+
+            ScriviLog("Ordine " + idOrdine + " (tavolo " + ordine.Tavolo + "): " +
+                      statoPrecedente + " -> " + stato);
 
             if (cm == null)
             {
@@ -309,6 +327,7 @@ namespace allyoucaneat
             }
 
             cm.Invia(Message.Crea(Comandi.OrderStatus, ordine.Id, stato.ToString()));
+            OrdineStatoCambiato?.Invoke(ordine, stato);
             return true;
         }
 
@@ -318,6 +337,15 @@ namespace allyoucaneat
             {
                 return new List<Ordine>(_ordini);
             }
+        }
+
+        private static bool TransizioneValida(StatoOrdine da, StatoOrdine a)
+        {
+            if (da == StatoOrdine.Inviato && a == StatoOrdine.InPreparazione) return true;
+            if (da == StatoOrdine.InPreparazione && a == StatoOrdine.Pronto) return true;
+            if (da == StatoOrdine.Pronto && a == StatoOrdine.Servito) return true;
+            if (da == a) return true;
+            return false;
         }
 
         private void ScriviLog(string testo)

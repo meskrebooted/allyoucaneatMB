@@ -23,6 +23,7 @@ namespace allyoucaneat
         private Socket _listener;
         private Thread _threadAccept;
         private volatile bool _inEsecuzione;
+        private volatile int _startedFlag;
 
         public event Action<string> Log;
         public event Action<Ordine> OrdineRicevuto;
@@ -35,9 +36,22 @@ namespace allyoucaneat
 
         public void Avvia(int porta)
         {
-            if (_inEsecuzione)
+            if (System.Threading.Interlocked.Exchange(ref _startedFlag, 1) == 1)
                 return;
 
+            try
+            {
+                AvviaInterno(porta);
+            }
+            catch
+            {
+                System.Threading.Interlocked.Exchange(ref _startedFlag, 0);
+                throw;
+            }
+        }
+
+        private void AvviaInterno(int porta)
+        {
             CaricaMenu();
 
             Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -78,6 +92,12 @@ namespace allyoucaneat
                 c.Chiudi();
 
             ScriviLog("Server fermato");
+        }
+
+        public void Dispose()
+        {
+            Ferma();
+            System.Threading.Interlocked.Exchange(ref _startedFlag, 0);
         }
 
         private void CicloAccept()

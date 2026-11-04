@@ -57,6 +57,7 @@ namespace allyoucaneat
             this.panelTop.Controls.Add(this.btnRicaricaMenu);
             this.panelTop.Controls.Add(this.lblTavoliConnessi);
             this.panelTop.Controls.Add(this.lblStato);
+            this.panelTop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.panelTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelTop.Location = new System.Drawing.Point(0, 0);
             this.panelTop.Name = "panelTop";
@@ -131,8 +132,8 @@ namespace allyoucaneat
             // lblStato
             //
             this.lblStato.AutoSize = true;
-            this.lblStato.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblStato.Location = new System.Drawing.Point(770, 22);
+            this.lblStato.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblStato.Location = new System.Drawing.Point(640, 22);
             this.lblStato.Name = "lblStato";
             this.lblStato.Size = new System.Drawing.Size(94, 16);
             this.lblStato.TabIndex = 6;
@@ -164,8 +165,14 @@ namespace allyoucaneat
             this.dgvOrdini.ColumnHeadersDefaultCellStyle.BackColor = System.Drawing.Color.SteelBlue;
             this.dgvOrdini.ColumnHeadersDefaultCellStyle.ForeColor = System.Drawing.Color.White;
             this.dgvOrdini.ColumnHeadersDefaultCellStyle.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.dgvOrdini.AlternatingRowsDefaultCellStyle.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.dgvOrdini.DefaultCellStyle.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.dgvOrdini.AlternatingRowsDefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(250)))), ((int)(((byte)(245)))));
+            this.dgvOrdini.BackgroundColor = System.Drawing.Color.White;
+            this.dgvOrdini.ColumnHeadersDefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.dgvOrdini.ColumnHeadersDefaultCellStyle.ForeColor = System.Drawing.Color.White;
+            this.dgvOrdini.ColumnHeadersDefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.dgvOrdini.DefaultCellStyle.BackColor = System.Drawing.Color.White;
+            this.dgvOrdini.DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.dgvOrdini.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.dgvOrdini.Size = new System.Drawing.Size(1000, 348);
             this.dgvOrdini.TabIndex = 1;
             this.dgvOrdini.SelectionChanged += new System.EventHandler(this.dgvOrdini_SelectionChanged);
@@ -317,7 +324,10 @@ namespace allyoucaneat
             //
             // txtLog
             //
+            this.txtLog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(25)))), ((int)(((byte)(25)))));
             this.txtLog.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.txtLog.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtLog.ForeColor = System.Drawing.Color.LightGreen;
             this.txtLog.Location = new System.Drawing.Point(0, 510);
             this.txtLog.Multiline = true;
             this.txtLog.Name = "txtLog";
@@ -330,15 +340,17 @@ namespace allyoucaneat
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(245)))), ((int)(((byte)(240)))));
             this.ClientSize = new System.Drawing.Size(1000, 650);
             this.Controls.Add(this.dgvOrdini);
             this.Controls.Add(this.panelAzioni);
             this.Controls.Add(this.txtLog);
             this.Controls.Add(this.panelTop);
+            this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.MinimumSize = new System.Drawing.Size(820, 520);
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Cucina - All You Can Eat";
+            this.Text = "Cucina - All You Can Eat Sushi";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.panelTop.ResumeLayout(false);
             this.panelTop.PerformLayout();

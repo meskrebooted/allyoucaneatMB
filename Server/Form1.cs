@@ -21,6 +21,9 @@ namespace allyoucaneat
         {
             InitializeComponent();
 
+            dgvOrdini.DefaultCellStyle.SelectionBackColor = Color.SteelBlue;
+            dgvOrdini.DefaultCellStyle.SelectionForeColor = Color.White;
+
             _tt.SetToolTip(btnAvvia, "Avvia il server TCP in ascolto");
             _tt.SetToolTip(btnFerma, "Ferma il server e chiude i tablet");
             _tt.SetToolTip(btnRicaricaMenu, "Ricarica menu.json da disco");

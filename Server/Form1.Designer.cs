@@ -84,23 +84,29 @@ namespace allyoucaneat
             //
             // btnAvvia
             //
+            this.btnAvvia.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnAvvia.Location = new System.Drawing.Point(160, 11);
             this.btnAvvia.Name = "btnAvvia";
             this.btnAvvia.Size = new System.Drawing.Size(110, 34);
             this.btnAvvia.TabIndex = 2;
             this.btnAvvia.Text = "Avvia server";
-            this.btnAvvia.UseVisualStyleBackColor = true;
+            this.btnAvvia.UseVisualStyleBackColor = false;
+            this.btnAvvia.BackColor = System.Drawing.Color.ForestGreen;
+            this.btnAvvia.ForeColor = System.Drawing.Color.White;
             this.btnAvvia.Click += new System.EventHandler(this.btnAvvia_Click);
             //
             // btnFerma
             //
             this.btnFerma.Enabled = false;
+            this.btnFerma.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnFerma.Location = new System.Drawing.Point(280, 11);
             this.btnFerma.Name = "btnFerma";
             this.btnFerma.Size = new System.Drawing.Size(110, 34);
             this.btnFerma.TabIndex = 3;
             this.btnFerma.Text = "Ferma server";
-            this.btnFerma.UseVisualStyleBackColor = true;
+            this.btnFerma.UseVisualStyleBackColor = false;
+            this.btnFerma.BackColor = System.Drawing.Color.Firebrick;
+            this.btnFerma.ForeColor = System.Drawing.Color.White;
             this.btnFerma.Click += new System.EventHandler(this.btnFerma_Click);
             //
             // btnRicaricaMenu
@@ -152,8 +158,13 @@ namespace allyoucaneat
             this.dgvOrdini.Name = "dgvOrdini";
             this.dgvOrdini.ReadOnly = true;
             this.dgvOrdini.RowHeadersVisible = false;
-            this.dgvOrdini.RowTemplate.Height = 24;
+            this.dgvOrdini.EnableHeadersVisualStyles = false;
+            this.dgvOrdini.RowTemplate.Height = 26;
             this.dgvOrdini.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvOrdini.ColumnHeadersDefaultCellStyle.BackColor = System.Drawing.Color.SteelBlue;
+            this.dgvOrdini.ColumnHeadersDefaultCellStyle.ForeColor = System.Drawing.Color.White;
+            this.dgvOrdini.ColumnHeadersDefaultCellStyle.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.dgvOrdini.AlternatingRowsDefaultCellStyle.BackColor = System.Drawing.Color.WhiteSmoke;
             this.dgvOrdini.Size = new System.Drawing.Size(1000, 348);
             this.dgvOrdini.TabIndex = 1;
             this.dgvOrdini.SelectionChanged += new System.EventHandler(this.dgvOrdini_SelectionChanged);

@@ -119,10 +119,23 @@ namespace allyoucaneat
             this.btnRicaricaMenu.UseVisualStyleBackColor = true;
             this.btnRicaricaMenu.Click += new System.EventHandler(this.btnRicaricaMenu_Click);
             //
+            // btnSvuotaLog
+            //
+            this.btnSvuotaLog.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSvuotaLog.Location = new System.Drawing.Point(520, 11);
+            this.btnSvuotaLog.Name = "btnSvuotaLog";
+            this.btnSvuotaLog.Size = new System.Drawing.Size(110, 34);
+            this.btnSvuotaLog.TabIndex = 5;
+            this.btnSvuotaLog.Text = "Svuota log";
+            this.btnSvuotaLog.UseVisualStyleBackColor = false;
+            this.btnSvuotaLog.BackColor = System.Drawing.Color.SteelBlue;
+            this.btnSvuotaLog.ForeColor = System.Drawing.Color.White;
+            this.btnSvuotaLog.Click += new System.EventHandler(this.btnSvuotaLog_Click);
+            //
             // lblTavoliConnessi
             //
             this.lblTavoliConnessi.AutoSize = true;
-            this.lblTavoliConnessi.Location = new System.Drawing.Point(528, 22);
+            this.lblTavoliConnessi.Location = new System.Drawing.Point(640, 22);
             this.lblTavoliConnessi.Name = "lblTavoliConnessi";
             this.lblTavoliConnessi.Size = new System.Drawing.Size(79, 16);
             this.lblTavoliConnessi.TabIndex = 5;
@@ -132,7 +145,7 @@ namespace allyoucaneat
             //
             this.lblStato.AutoSize = true;
             this.lblStato.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblStato.Location = new System.Drawing.Point(640, 22);
+            this.lblStato.Location = new System.Drawing.Point(770, 22);
             this.lblStato.Name = "lblStato";
             this.lblStato.Size = new System.Drawing.Size(94, 16);
             this.lblStato.TabIndex = 6;
@@ -357,6 +370,7 @@ namespace allyoucaneat
         private System.Windows.Forms.Button btnAvvia;
         private System.Windows.Forms.Button btnFerma;
         private System.Windows.Forms.Button btnRicaricaMenu;
+        private System.Windows.Forms.Button btnSvuotaLog;
         private System.Windows.Forms.Label lblTavoliConnessi;
         private System.Windows.Forms.Label lblStato;
         private System.Windows.Forms.DataGridView dgvOrdini;

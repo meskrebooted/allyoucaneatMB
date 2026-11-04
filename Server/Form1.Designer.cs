@@ -25,8 +25,6 @@ namespace allyoucaneat
             this.btnRicaricaMenu = new System.Windows.Forms.Button();
             this.lblTavoliConnessi = new System.Windows.Forms.Label();
             this.lblStato = new System.Windows.Forms.Label();
-            this.btnRiduisci = new System.Windows.Forms.Button();
-            this.btnChiudi = new System.Windows.Forms.Button();
             this.dgvOrdini = new System.Windows.Forms.DataGridView();
             this.colId = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colTavolo = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -50,7 +48,7 @@ namespace allyoucaneat
             this.panelAzioni.SuspendLayout();
             this.SuspendLayout();
             //
-            // panelTop - TitleBar personalizzata
+            // panelTop
             //
             this.panelTop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(26)))), ((int)(((byte)(26)))));
             this.panelTop.Controls.Add(this.lblPorta);
@@ -60,16 +58,11 @@ namespace allyoucaneat
             this.panelTop.Controls.Add(this.btnRicaricaMenu);
             this.panelTop.Controls.Add(this.lblTavoliConnessi);
             this.panelTop.Controls.Add(this.lblStato);
-            this.panelTop.Controls.Add(this.btnRiduisci);
-            this.panelTop.Controls.Add(this.btnChiudi);
             this.panelTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelTop.Location = new System.Drawing.Point(0, 0);
             this.panelTop.Name = "panelTop";
             this.panelTop.Size = new System.Drawing.Size(1000, 56);
             this.panelTop.TabIndex = 0;
-            this.panelTop.MouseDown += new System.Windows.Forms.MouseEventHandler(this.panelTop_MouseDown);
-            this.panelTop.MouseMove += new System.Windows.Forms.MouseEventHandler(this.panelTop_MouseMove);
-            this.panelTop.MouseUp += new System.Windows.Forms.MouseEventHandler(this.panelTop_MouseUp);
             //
             // lblPorta
             //
@@ -163,38 +156,6 @@ namespace allyoucaneat
             this.lblStato.Size = new System.Drawing.Size(104, 19);
             this.lblStato.TabIndex = 6;
             this.lblStato.Text = "Server fermato";
-            //
-            // btnRiduisci
-            //
-            this.btnRiduisci.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnRiduisci.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(26)))), ((int)(((byte)(26)))));
-            this.btnRiduisci.FlatAppearance.BorderSize = 0;
-            this.btnRiduisci.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnRiduisci.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRiduisci.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(245)))), ((int)(((byte)(240)))));
-            this.btnRiduisci.Location = new System.Drawing.Point(910, 12);
-            this.btnRiduisci.Name = "btnRiduisci";
-            this.btnRiduisci.Size = new System.Drawing.Size(36, 30);
-            this.btnRiduisci.TabIndex = 7;
-            this.btnRiduisci.Text = "—";
-            this.btnRiduisci.UseVisualStyleBackColor = false;
-            this.btnRiduisci.Click += new System.EventHandler(this.btnRiduisci_Click);
-            //
-            // btnChiudi
-            //
-            this.btnChiudi.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnChiudi.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(77)))), ((int)(((byte)(58)))));
-            this.btnChiudi.FlatAppearance.BorderSize = 0;
-            this.btnChiudi.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnChiudi.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnChiudi.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(245)))), ((int)(((byte)(240)))));
-            this.btnChiudi.Location = new System.Drawing.Point(952, 12);
-            this.btnChiudi.Name = "btnChiudi";
-            this.btnChiudi.Size = new System.Drawing.Size(36, 30);
-            this.btnChiudi.TabIndex = 8;
-            this.btnChiudi.Text = "×";
-            this.btnChiudi.UseVisualStyleBackColor = false;
-            this.btnChiudi.Click += new System.EventHandler(this.btnChiudi_Click);
             //
             // dgvOrdini
             //
@@ -430,7 +391,7 @@ namespace allyoucaneat
             this.Controls.Add(this.txtLog);
             this.Controls.Add(this.panelTop);
             this.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.MinimumSize = new System.Drawing.Size(820, 520);
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
@@ -456,8 +417,6 @@ namespace allyoucaneat
         private System.Windows.Forms.Button btnRicaricaMenu;
         private System.Windows.Forms.Label lblTavoliConnessi;
         private System.Windows.Forms.Label lblStato;
-        private System.Windows.Forms.Button btnRiduisci;
-        private System.Windows.Forms.Button btnChiudi;
         private System.Windows.Forms.DataGridView dgvOrdini;
         private System.Windows.Forms.DataGridViewTextBoxColumn colId;
         private System.Windows.Forms.DataGridViewTextBoxColumn colTavolo;

@@ -14,11 +14,24 @@ namespace allyoucaneat
         private readonly Server _server = new Server();
         private readonly HashSet<int> _tavoliConnessi = new HashSet<int>();
         private readonly Timer _timerTempi = new Timer();
+        private readonly ToolTip _tt = new ToolTip();
         private string _filtroTavolo = "";
 
         public Form1()
         {
             InitializeComponent();
+
+            _tt.SetToolTip(btnAvvia, "Avvia il server TCP in ascolto");
+            _tt.SetToolTip(btnFerma, "Ferma il server e chiude i tablet");
+            _tt.SetToolTip(btnRicaricaMenu, "Ricarica menu.json da disco");
+            _tt.SetToolTip(dgvOrdini, "Seleziona un ordine per cambiarne lo stato");
+            _tt.SetToolTip(txtFiltroTavolo, "Filtra ordini per numero di tavolo");
+            _tt.SetToolTip(btnInPreparazione, "Passa l'ordine selezionato in preparazione");
+            _tt.SetToolTip(btnPronto, "Segna l'ordine come pronto");
+            _tt.SetToolTip(btnServito, "Segna l'ordine come servito");
+            _tt.SetToolTip(btnEliminaServiti, "Rimuove gli ordini gia' serviti");
+            _tt.SetToolTip(btnEsportaCSV, "Esporta gli ordini in file CSV");
+            _tt.SetToolTip(txtLog, "Log delle operazioni del server");
 
             // Gli eventi del server arrivano dai thread di rete: i controlli vanno toccati solo dal thread della UI.
             _server.Log += testo => EseguiSuUI(() => txtLog.AppendText(testo + Environment.NewLine));

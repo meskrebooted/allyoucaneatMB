@@ -379,6 +379,15 @@ namespace allyoucaneat
         private void ScriviLog(string testo)
         {
             txtLog.AppendText(DateTime.Now.ToString("HH:mm:ss") + "  " + testo + Environment.NewLine);
+            if (txtLog.Lines.Length > 500)
+            {
+                var righe = txtLog.Lines;
+                var nuove = new string[righe.Length - 100];
+                Array.Copy(righe, 100, nuove, 0, nuove.Length);
+                txtLog.Lines = nuove;
+            }
+            txtLog.SelectionStart = txtLog.TextLength;
+            txtLog.ScrollToCaret();
         }
 
         // ---------- Chiusura ----------

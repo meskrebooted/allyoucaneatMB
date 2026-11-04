@@ -34,7 +34,6 @@ namespace allyoucaneat
             _tt.SetToolTip(btnServito, "Segna l'ordine come servito");
             _tt.SetToolTip(btnEliminaServiti, "Rimuove gli ordini gia' serviti");
             _tt.SetToolTip(btnEsportaCSV, "Esporta gli ordini in file CSV");
-            _tt.SetToolTip(btnSvuotaLog, "Svuota il pannello log");
             _tt.SetToolTip(txtLog, "Log delle operazioni del server");
 
             // Gli eventi del server arrivano dai thread di rete: i controlli vanno toccati solo dal thread della UI.
@@ -99,11 +98,6 @@ namespace allyoucaneat
         private void btnRicaricaMenu_Click(object sender, EventArgs e)
         {
             _server.RicaricaMenu();
-        }
-
-        private void btnSvuotaLog_Click(object sender, EventArgs e)
-        {
-            txtLog.Clear();
         }
 
         private void AggiornaStatoServer()

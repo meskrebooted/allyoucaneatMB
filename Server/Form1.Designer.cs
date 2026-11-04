@@ -119,19 +119,6 @@ namespace allyoucaneat
             this.btnRicaricaMenu.UseVisualStyleBackColor = true;
             this.btnRicaricaMenu.Click += new System.EventHandler(this.btnRicaricaMenu_Click);
             //
-            // btnSvuotaLog
-            //
-            this.btnSvuotaLog.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSvuotaLog.Location = new System.Drawing.Point(520, 11);
-            this.btnSvuotaLog.Name = "btnSvuotaLog";
-            this.btnSvuotaLog.Size = new System.Drawing.Size(110, 34);
-            this.btnSvuotaLog.TabIndex = 5;
-            this.btnSvuotaLog.Text = "Svuota log";
-            this.btnSvuotaLog.UseVisualStyleBackColor = false;
-            this.btnSvuotaLog.BackColor = System.Drawing.Color.SteelBlue;
-            this.btnSvuotaLog.ForeColor = System.Drawing.Color.White;
-            this.btnSvuotaLog.Click += new System.EventHandler(this.btnSvuotaLog_Click);
-            //
             // lblTavoliConnessi
             //
             this.lblTavoliConnessi.AutoSize = true;
@@ -371,7 +358,6 @@ namespace allyoucaneat
         private System.Windows.Forms.Button btnAvvia;
         private System.Windows.Forms.Button btnFerma;
         private System.Windows.Forms.Button btnRicaricaMenu;
-        private System.Windows.Forms.Button btnSvuotaLog;
         private System.Windows.Forms.Label lblTavoliConnessi;
         private System.Windows.Forms.Label lblStato;
         private System.Windows.Forms.DataGridView dgvOrdini;

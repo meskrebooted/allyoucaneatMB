@@ -17,13 +17,22 @@ namespace allyoucaneat
         private readonly ToolTip _tt = new ToolTip();
         private string _filtroTavolo = "";
 
+        // Trascinamento finestra (FormBorderStyle = None)
+        private bool _dragging = false;
+        private Point _dragStart = Point.Empty;
+
         public Form1()
         {
             InitializeComponent();
 
-            dgvOrdini.DefaultCellStyle.SelectionBackColor = Color.SteelBlue;
-            dgvOrdini.DefaultCellStyle.SelectionForeColor = Color.White;
+            // Titolo della finestra
+            this.Text = "Cucina - All You Can Eat Sushi";
 
+            // Colore selezione righe griglia
+            dgvOrdini.DefaultCellStyle.SelectionBackColor = Color.FromArgb(224, 77, 58);
+            dgvOrdini.DefaultCellStyle.SelectionForeColor = Color.FromArgb(245, 245, 240);
+
+            // Tooltip sui controlli
             _tt.SetToolTip(btnAvvia, "Avvia il server TCP in ascolto");
             _tt.SetToolTip(btnFerma, "Ferma il server e chiude i tablet");
             _tt.SetToolTip(btnRicaricaMenu, "Ricarica menu.json da disco");
@@ -35,6 +44,17 @@ namespace allyoucaneat
             _tt.SetToolTip(btnEliminaServiti, "Rimuove gli ordini gia' serviti");
             _tt.SetToolTip(btnEsportaCSV, "Esporta gli ordini in file CSV");
             _tt.SetToolTip(txtLog, "Log delle operazioni del server");
+
+            // Effetto hover sui pulsanti azione
+            AggiungiHover(btnInPreparazione, Color.FromArgb(212, 175, 55), Color.FromArgb(240, 210, 100));
+            AggiungiHover(btnPronto, Color.FromArgb(143, 188, 143), Color.FromArgb(180, 220, 180));
+            AggiungiHover(btnServito, Color.FromArgb(143, 188, 143), Color.FromArgb(180, 220, 180));
+            AggiungiHover(btnEliminaServiti, Color.FromArgb(42, 42, 42), Color.FromArgb(70, 70, 70));
+            AggiungiHover(btnEsportaCSV, Color.FromArgb(42, 42, 42), Color.FromArgb(70, 70, 70));
+
+            // Titolo bar hover
+            AggiungiHover(btnRiduisci, Color.FromArgb(26, 26, 26), Color.FromArgb(60, 60, 60));
+            AggiungiHover(btnChiudi, Color.FromArgb(224, 77, 58), Color.FromArgb(240, 110, 90));
 
             // Gli eventi del server arrivano dai thread di rete: i controlli vanno toccati solo dal thread della UI.
             _server.Log += testo => EseguiSuUI(() => txtLog.AppendText(testo + Environment.NewLine));
@@ -50,6 +70,48 @@ namespace allyoucaneat
 
             AggiornaStatoServer();
             AggiornaTavoliEContatori();
+        }
+
+        // Effetto hover: cambia colore al passaggio del mouse.
+        private void AggiungiHover(Button btn, Color coloreNormale, Color coloreHover)
+        {
+            btn.MouseEnter += (s, e) => btn.BackColor = coloreHover;
+            btn.MouseLeave += (s, e) => btn.BackColor = coloreNormale;
+        }
+
+        // ---------- Trascinamento finestra (title bar personalizzata) ----------
+
+        private void panelTop_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                _dragging = true;
+                _dragStart = e.Location;
+            }
+        }
+
+        private void panelTop_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_dragging)
+            {
+                Point delta = new Point(e.X - _dragStart.X, e.Y - _dragStart.Y);
+                this.Location = new Point(this.Location.X + delta.X, this.Location.Y + delta.Y);
+            }
+        }
+
+        private void panelTop_MouseUp(object sender, MouseEventArgs e)
+        {
+            _dragging = false;
+        }
+
+        private void btnRiduisci_Click(object sender, EventArgs e)
+        {
+            this.WindowState = FormWindowState.Minimized;
+        }
+
+        private void btnChiudi_Click(object sender, EventArgs e)
+        {
+            this.Close();
         }
 
         // Gli eventi del server arrivano dai thread di rete: i controlli vanno toccati solo dal thread della UI.
@@ -112,7 +174,7 @@ namespace allyoucaneat
             lblStato.Text = attivo
                 ? "In ascolto - tavoli connessi: " + _tavoliConnessi.Count
                 : "Server fermato";
-            lblStato.ForeColor = attivo ? Color.DarkGreen : Color.DarkRed;
+            lblStato.ForeColor = attivo ? Color.FromArgb(143, 188, 143) : Color.FromArgb(224, 77, 58);
         }
 
         // ---------- Ordini ----------
@@ -281,16 +343,18 @@ namespace allyoucaneat
             switch (stato)
             {
                 case StatoOrdine.InPreparazione:
-                    riga.DefaultCellStyle.BackColor = Color.LemonChiffon;
+                    riga.DefaultCellStyle.BackColor = Color.FromArgb(255, 240, 200);
                     break;
                 case StatoOrdine.Pronto:
-                    riga.DefaultCellStyle.BackColor = Color.LightGreen;
+                    riga.DefaultCellStyle.BackColor = Color.FromArgb(210, 240, 210);
                     break;
                 case StatoOrdine.Servito:
-                    riga.DefaultCellStyle.BackColor = Color.LightGray;
+                    riga.DefaultCellStyle.BackColor = Color.FromArgb(60, 60, 60);
+                    riga.DefaultCellStyle.ForeColor = Color.FromArgb(160, 160, 160);
                     break;
                 default:
-                    riga.DefaultCellStyle.BackColor = Color.White;
+                    riga.DefaultCellStyle.BackColor = Color.FromArgb(26, 26, 26);
+                    riga.DefaultCellStyle.ForeColor = Color.FromArgb(245, 245, 240);
                     break;
             }
         }

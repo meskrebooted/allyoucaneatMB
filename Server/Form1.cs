@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
+using Newtonsoft.Json;
 
 namespace allyoucaneat
 {
@@ -38,7 +39,7 @@ namespace allyoucaneat
             _tt.SetToolTip(btnPronto, "Segna l'ordine come pronto");
             _tt.SetToolTip(btnServito, "Segna l'ordine come servito");
             _tt.SetToolTip(btnEliminaServiti, "Rimuove gli ordini gia' serviti");
-            _tt.SetToolTip(btnEsportaCSV, "Esporta gli ordini in file CSV");
+            _tt.SetToolTip(btnEsportaCSV, "Esporta gli ordini in file JSON");
             _tt.SetToolTip(txtLog, "Log delle operazioni del server");
 
             // Effetto hover sui pulsanti azione
@@ -244,24 +245,15 @@ namespace allyoucaneat
             using (SaveFileDialog dlg = new SaveFileDialog())
             {
                 dlg.Title = "Esporta ordini";
-                dlg.Filter = "File CSV|*.csv";
-                dlg.FileName = "ordini_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv";
+                dlg.Filter = "File JSON|*.json";
+                dlg.FileName = "ordini_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".json";
                 if (dlg.ShowDialog() != DialogResult.OK)
                     return;
 
                 try
                 {
-                    StringBuilder sb = new StringBuilder();
-                    sb.AppendLine("Id,Tavolo,Ora,Piatti,Stato");
-                    foreach (Ordine o in ordini)
-                    {
-                        sb.Append(o.Id).Append(',');
-                        sb.Append(o.Tavolo).Append(',');
-                        sb.Append('"').Append(o.Ora.ToString("yyyy-MM-dd HH:mm:ss")).Append('"').Append(',');
-                        sb.Append('"').Append(o.Riepilogo().Replace("\"", "\"\"")).Append('"').Append(',');
-                        sb.AppendLine(o.Stato.ToString());
-                    }
-                    File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
+                    string json = JsonConvert.SerializeObject(ordini, Formatting.Indented);
+                    File.WriteAllText(dlg.FileName, json, Encoding.UTF8);
                     ScriviLog("Ordini esportati: " + dlg.FileName);
                 }
                 catch (Exception ex)

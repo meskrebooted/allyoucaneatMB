@@ -274,7 +274,7 @@ namespace allyoucaneat
             this.btnEsportaCSV.Name = "btnEsportaCSV";
             this.btnEsportaCSV.Size = new System.Drawing.Size(170, 32);
             this.btnEsportaCSV.TabIndex = 6;
-            this.btnEsportaCSV.Text = "Esporta CSV";
+            this.btnEsportaCSV.Text = "Esporta JSON";
             this.btnEsportaCSV.UseVisualStyleBackColor = false;
             this.btnEsportaCSV.Click += new System.EventHandler(this.btnEsportaCSV_Click);
             //

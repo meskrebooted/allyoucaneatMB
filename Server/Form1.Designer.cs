@@ -182,6 +182,8 @@ namespace allyoucaneat
             this.colTavolo.Name = "colTavolo";
             this.colTavolo.ReadOnly = true;
             this.colTavolo.Width = 70;
+            this.colTavolo.DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            this.colTavolo.HeaderCell.Style.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
             //
             // colOra
             //
@@ -189,6 +191,8 @@ namespace allyoucaneat
             this.colOra.Name = "colOra";
             this.colOra.ReadOnly = true;
             this.colOra.Width = 80;
+            this.colOra.DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            this.colOra.HeaderCell.Style.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
             //
             // colTrascorsi
             //
@@ -196,6 +200,8 @@ namespace allyoucaneat
             this.colTrascorsi.Name = "colTrascorsi";
             this.colTrascorsi.ReadOnly = true;
             this.colTrascorsi.Width = 90;
+            this.colTrascorsi.DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+            this.colTrascorsi.HeaderCell.Style.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
             //
             // colPiatti
             //

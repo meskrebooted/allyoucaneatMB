@@ -49,24 +49,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Server\Comandi.cs">
-      <Link>Comandi.cs</Link>
-    </Compile>
-    <Compile Include="..\Server\Message.cs">
-      <Link>Message.cs</Link>
-    </Compile>
-    <Compile Include="..\Server\Ordine.cs">
-      <Link>Ordine.cs</Link>
-    </Compile>
-    <Compile Include="..\Server\Piatto.cs">
-      <Link>Piatto.cs</Link>
-    </Compile>
-    <Compile Include="..\Server\RigaOrdine.cs">
-      <Link>RigaOrdine.cs</Link>
-    </Compile>
-    <Compile Include="..\Server\StatoOrdine.cs">
-      <Link>StatoOrdine.cs</Link>
-    </Compile>
+    <Compile Include="Comandi.cs" />
+    <Compile Include="Message.cs" />
+    <Compile Include="Ordine.cs" />
+    <Compile Include="Piatto.cs" />
+    <Compile Include="RigaOrdine.cs" />
+    <Compile Include="StatoOrdine.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>

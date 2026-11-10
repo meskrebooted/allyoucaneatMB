@@ -71,6 +71,23 @@ namespace allyoucaneat
             lblStato.Text = attivo
                 ? "In ascolto - tavoli connessi: " + _tavoliConnessi.Count
                 : "Server fermato";
+            lblStato.ForeColor = attivo ? Color.LightGreen : Color.Silver;
+
+            AggiornaPulsanti();
+        }
+
+        // I pulsanti di stato servono solo se c'e' un ordine selezionato.
+        private void AggiornaPulsanti()
+        {
+            bool haSelezione = dgvOrdini.CurrentRow != null;
+            btnInPreparazione.Enabled = haSelezione;
+            btnPronto.Enabled = haSelezione;
+            btnServito.Enabled = haSelezione;
+        }
+
+        private void dgvOrdini_SelectionChanged(object sender, EventArgs e)
+        {
+            AggiornaPulsanti();
         }
 
         // ---------- Ordini ----------

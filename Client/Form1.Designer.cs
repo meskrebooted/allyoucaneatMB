@@ -44,8 +44,6 @@
             this.lblStato = new System.Windows.Forms.Label();
             this.lblIp = new System.Windows.Forms.Label();
             this.txtIp = new System.Windows.Forms.TextBox();
-            this.lblTavolo = new System.Windows.Forms.Label();
-            this.numTavolo = new System.Windows.Forms.NumericUpDown();
             this.btnConnetti = new System.Windows.Forms.Button();
             this.btnDisconnetti = new System.Windows.Forms.Button();
             this.timerBanner = new System.Windows.Forms.Timer(this.components);
@@ -54,7 +52,6 @@
             this.panelAzioni.SuspendLayout();
             this.panelOrdiniInviati.SuspendLayout();
             this.panelTop.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numTavolo)).BeginInit();
             this.SuspendLayout();
             //
             // panelCentro
@@ -291,8 +288,6 @@
             this.panelTop.Controls.Add(this.lblStato);
             this.panelTop.Controls.Add(this.lblIp);
             this.panelTop.Controls.Add(this.txtIp);
-            this.panelTop.Controls.Add(this.lblTavolo);
-            this.panelTop.Controls.Add(this.numTavolo);
             this.panelTop.Controls.Add(this.btnConnetti);
             this.panelTop.Controls.Add(this.btnDisconnetti);
             this.panelTop.Dock = System.Windows.Forms.DockStyle.Top;
@@ -325,7 +320,7 @@
             this.lblIp.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblIp.AutoSize = true;
             this.lblIp.ForeColor = System.Drawing.Color.White;
-            this.lblIp.Location = new System.Drawing.Point(700, 31);
+            this.lblIp.Location = new System.Drawing.Point(830, 31);
             this.lblIp.Name = "lblIp";
             this.lblIp.Size = new System.Drawing.Size(65, 19);
             this.lblIp.Text = "IP server";
@@ -333,32 +328,11 @@
             // txtIp
             //
             this.txtIp.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtIp.Location = new System.Drawing.Point(775, 28);
+            this.txtIp.Location = new System.Drawing.Point(905, 28);
             this.txtIp.Name = "txtIp";
             this.txtIp.Size = new System.Drawing.Size(135, 25);
             this.txtIp.TabIndex = 0;
             this.txtIp.Text = "127.0.0.1";
-            //
-            // lblTavolo
-            //
-            this.lblTavolo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblTavolo.AutoSize = true;
-            this.lblTavolo.ForeColor = System.Drawing.Color.White;
-            this.lblTavolo.Location = new System.Drawing.Point(925, 31);
-            this.lblTavolo.Name = "lblTavolo";
-            this.lblTavolo.Size = new System.Drawing.Size(48, 19);
-            this.lblTavolo.Text = "Tavolo";
-            //
-            // numTavolo
-            //
-            this.numTavolo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.numTavolo.Location = new System.Drawing.Point(980, 28);
-            this.numTavolo.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
-            this.numTavolo.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
-            this.numTavolo.Name = "numTavolo";
-            this.numTavolo.Size = new System.Drawing.Size(55, 25);
-            this.numTavolo.TabIndex = 1;
-            this.numTavolo.Value = new decimal(new int[] { 1, 0, 0, 0 });
             //
             // btnConnetti
             //
@@ -370,7 +344,7 @@
             this.btnConnetti.Location = new System.Drawing.Point(1050, 22);
             this.btnConnetti.Name = "btnConnetti";
             this.btnConnetti.Size = new System.Drawing.Size(100, 36);
-            this.btnConnetti.TabIndex = 2;
+            this.btnConnetti.TabIndex = 1;
             this.btnConnetti.Text = "Connetti";
             this.btnConnetti.UseVisualStyleBackColor = false;
             this.btnConnetti.Click += new System.EventHandler(this.btnConnetti_Click);
@@ -385,7 +359,7 @@
             this.btnDisconnetti.Location = new System.Drawing.Point(1160, 22);
             this.btnDisconnetti.Name = "btnDisconnetti";
             this.btnDisconnetti.Size = new System.Drawing.Size(100, 36);
-            this.btnDisconnetti.TabIndex = 3;
+            this.btnDisconnetti.TabIndex = 2;
             this.btnDisconnetti.Text = "Disconnetti";
             this.btnDisconnetti.UseVisualStyleBackColor = false;
             this.btnDisconnetti.Click += new System.EventHandler(this.btnDisconnetti_Click);
@@ -416,7 +390,6 @@
             this.panelOrdiniInviati.ResumeLayout(false);
             this.panelTop.ResumeLayout(false);
             this.panelTop.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numTavolo)).EndInit();
             this.ResumeLayout(false);
         }
 
@@ -448,8 +421,6 @@
         private System.Windows.Forms.Label lblStato;
         private System.Windows.Forms.Label lblIp;
         private System.Windows.Forms.TextBox txtIp;
-        private System.Windows.Forms.Label lblTavolo;
-        private System.Windows.Forms.NumericUpDown numTavolo;
         private System.Windows.Forms.Button btnConnetti;
         private System.Windows.Forms.Button btnDisconnetti;
         private System.Windows.Forms.Timer timerBanner;

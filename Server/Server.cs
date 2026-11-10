@@ -20,26 +20,14 @@ namespace allyoucaneat
         private readonly List<Ordine> _ordini = new List<Ordine>();
         private List<Piatto> _menu = new List<Piatto>();
 
-        private const int MaxClienti = 100;
-
-        private readonly string _percorsoOrdini;
-
-        public Server()
-        {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            _percorsoOrdini = Path.Combine(baseDir, "ordini.json");
-        }
-
         private Socket _listener;
         private Thread _threadAccept;
         private volatile bool _inEsecuzione;
-        private volatile int _startedFlag;
 
         public event Action<string> Log;
         public event Action<Ordine> OrdineRicevuto;
         public event Action<int> TavoloConnesso;
         public event Action<int> TavoloDisconnesso;
-        public event Action<Ordine, StatoOrdine> OrdineStatoCambiato;
 
         public bool InEsecuzione { get { return _inEsecuzione; } }
 
@@ -47,31 +35,16 @@ namespace allyoucaneat
 
         public void Avvia(int porta)
         {
-            if (System.Threading.Interlocked.Exchange(ref _startedFlag, 1) == 1)
+            if (_inEsecuzione)
                 return;
 
-            try
-            {
-                AvviaInterno(porta);
-            }
-            catch
-            {
-                System.Threading.Interlocked.Exchange(ref _startedFlag, 0);
-                throw;
-            }
-        }
-
-        private void AvviaInterno(int porta)
-        {
             CaricaMenu();
-            CaricaOrdini();
 
             Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
             {
-                listener.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 listener.Bind(new IPEndPoint(IPAddress.Any, porta));
-                listener.Listen(MaxClienti);
+                listener.Listen(10);
             }
             catch
             {
@@ -104,14 +77,7 @@ namespace allyoucaneat
             foreach (ClientManager c in copia)
                 c.Chiudi();
 
-            SalvaOrdini();
             ScriviLog("Server fermato");
-        }
-
-        public void Dispose()
-        {
-            Ferma();
-            System.Threading.Interlocked.Exchange(ref _startedFlag, 0);
         }
 
         private void CicloAccept()
@@ -121,18 +87,6 @@ namespace allyoucaneat
                 try
                 {
                     Socket socket = _listener.Accept();
-
-                    int connessi;
-                    lock (_lock)
-                    {
-                        connessi = _connessi.Count;
-                    }
-                    if (connessi >= MaxClienti)
-                    {
-                        ScriviLog("Connessione rifiutata: massimo " + MaxClienti + " clienti raggiunto");
-                        try { socket.Close(); } catch { }
-                        continue;
-                    }
 
                     ClientManager cm = new ClientManager(socket, this);
                     lock (_lock)
@@ -184,96 +138,29 @@ namespace allyoucaneat
             }
         }
 
-        // Ricarica il menu da menu.json (chiamato dalla form).
-        public void RicaricaMenu()
-        {
-            CaricaMenu();
-        }
-
-        // ---------- Persistenza ordini ----------
-
-        private void CaricaOrdini()
-        {
-            try
-            {
-                if (!File.Exists(_percorsoOrdini))
-                    return;
-
-                string json = File.ReadAllText(_percorsoOrdini, Encoding.UTF8);
-                List<Ordine> ordini = JsonConvert.DeserializeObject<List<Ordine>>(json);
-                if (ordini != null)
-                {
-                    lock (_lock)
-                    {
-                        _ordini.Clear();
-                        foreach (Ordine o in ordini)
-                            _ordini.Add(o);
-                    }
-                    ScriviLog("Ordini ripristinati: " + _ordini.Count);
-                }
-            }
-            catch (Exception ex)
-            {
-                ScriviLog("Errore nel ripristino degli ordini: " + ex.Message);
-            }
-        }
-
-        private void SalvaOrdini()
-        {
-            try
-            {
-                List<Ordine> copia;
-                lock (_lock)
-                {
-                    copia = new List<Ordine>(_ordini);
-                }
-                string json = JsonConvert.SerializeObject(copia, Formatting.Indented);
-                string tmp = _percorsoOrdini + ".tmp";
-                File.WriteAllText(tmp, json, Encoding.UTF8);
-                File.Move(tmp, _percorsoOrdini);
-            }
-            catch (Exception ex)
-            {
-                ScriviLog("Errore nel salvataggio degli ordini: " + ex.Message);
-            }
-        }
-
-        // Rimuove definitivamente gli ordini giu00e0 serviti (pulizia periodica).
-        public int RimuoviOrdiniServiti()
-        {
-            List<Ordine> daRimuovere;
-            lock (_lock)
-            {
-                daRimuovere = _ordini.Where(o => o.Stato == StatoOrdine.Servito).ToList();
-                foreach (Ordine o in daRimuovere)
-                    _ordini.Remove(o);
-            }
-
-            if (daRimuovere.Count > 0)
-            {
-                SalvaOrdini();
-                ScriviLog("Rimossi " + daRimuovere.Count + " ordine/i servito/i");
-            }
-            return daRimuovere.Count;
-        }
-
         // ---------- Chiamati dai ClientManager ----------
 
-        public void RegistraTavolo(int tavolo, ClientManager cm)
+        // Assegna al client il primo numero di tavolo libero (1, 2, 3...).
+        // Ritorna -1 se il client si e' gia' disconnesso.
+        public int AssegnaTavolo(ClientManager cm)
         {
-            ClientManager vecchio = null;
+            int tavolo;
             lock (_lock)
             {
-                _tavoli.TryGetValue(tavolo, out vecchio);
-                _tavoli[tavolo] = cm;
-            }
+                if (!_connessi.Contains(cm))
+                    return -1;
 
-            // Se il tavolo era gia' connesso (es. tablet riavviato) chiudo la vecchia connessione.
-            if (vecchio != null && vecchio != cm)
-                vecchio.Chiudi();
+                tavolo = 1;
+                while (_tavoli.ContainsKey(tavolo))
+                    tavolo++;
+
+                _tavoli[tavolo] = cm;
+                cm.ImpostaTavolo(tavolo);
+            }
 
             ScriviLog("Tavolo " + tavolo + " connesso");
             TavoloConnesso?.Invoke(tavolo);
+            return tavolo;
         }
 
         public void RiceviOrdine(Ordine ordine)
@@ -315,12 +202,8 @@ namespace allyoucaneat
         // Cambia lo stato di un ordine e avvisa il tablet del tavolo.
         public bool CambiaStato(string idOrdine, StatoOrdine stato)
         {
-            if (string.IsNullOrEmpty(idOrdine))
-                return false;
-
             Ordine ordine;
             ClientManager cm;
-            StatoOrdine statoPrecedente;
 
             lock (_lock)
             {
@@ -328,22 +211,9 @@ namespace allyoucaneat
                 if (ordine == null)
                     return false;
 
-                if (!TransizioneValida(ordine.Stato, stato))
-                {
-                    ScriviLog("Transizione non valida per ordine " + idOrdine + ": " +
-                              ordine.Stato + " -> " + stato);
-                    return false;
-                }
-
-                statoPrecedente = ordine.Stato;
                 ordine.Stato = stato;
                 _tavoli.TryGetValue(ordine.Tavolo, out cm);
             }
-
-            SalvaOrdini();
-
-            ScriviLog("Ordine " + idOrdine + " (tavolo " + ordine.Tavolo + "): " +
-                      statoPrecedente + " -> " + stato);
 
             if (cm == null)
             {
@@ -352,7 +222,6 @@ namespace allyoucaneat
             }
 
             cm.Invia(Message.Crea(Comandi.OrderStatus, ordine.Id, stato.ToString()));
-            OrdineStatoCambiato?.Invoke(ordine, stato);
             return true;
         }
 
@@ -362,15 +231,6 @@ namespace allyoucaneat
             {
                 return new List<Ordine>(_ordini);
             }
-        }
-
-        private static bool TransizioneValida(StatoOrdine da, StatoOrdine a)
-        {
-            if (da == StatoOrdine.Inviato && a == StatoOrdine.InPreparazione) return true;
-            if (da == StatoOrdine.InPreparazione && a == StatoOrdine.Pronto) return true;
-            if (da == StatoOrdine.Pronto && a == StatoOrdine.Servito) return true;
-            if (da == a) return true;
-            return false;
         }
 
         private void ScriviLog(string testo)

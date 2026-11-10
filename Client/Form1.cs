@@ -24,6 +24,7 @@ namespace Client
         private readonly List<RigaOrdine> _carrello = new List<RigaOrdine>();
         private readonly Queue<Ordine> _inAttesaConferma = new Queue<Ordine>();
         private string _categoriaCorrente = null; // null = tutte le categorie
+        private int _tavolo = 0;                  // assegnato dal server dopo la connessione
 
         public Form1()
         {
@@ -54,7 +55,7 @@ namespace Client
         {
             try
             {
-                _client.Connetti(txtIp.Text.Trim(), Porta, (int)numTavolo.Value);
+                _client.Connetti(txtIp.Text.Trim(), Porta);
             }
             catch (Exception ex)
             {
@@ -72,6 +73,7 @@ namespace Client
         private void GestisciDisconnessione()
         {
             _inAttesaConferma.Clear();
+            _tavolo = 0;
             AggiornaStato();
             lblStato.Text = "Connessione chiusa";
         }
@@ -83,9 +85,15 @@ namespace Client
             btnConnetti.Enabled = !connesso;
             btnDisconnetti.Enabled = connesso;
             txtIp.Enabled = !connesso;
-            numTavolo.Enabled = !connesso;
 
-            lblStato.Text = connesso ? "Connesso - Tavolo " + numTavolo.Value : "Non connesso";
+            if (!connesso)
+                lblStato.Text = "Non connesso";
+            else if (_tavolo > 0)
+                lblStato.Text = "Connesso - Tavolo " + _tavolo;
+            else
+                lblStato.Text = "Connessione in corso...";
+
+            Text = (connesso && _tavolo > 0) ? "Tablet - Tavolo " + _tavolo : "Tablet - All You Can Eat";
             lblStato.ForeColor = connesso ? Color.LightGreen : Color.Silver;
 
             AggiornaPulsanti();
@@ -98,8 +106,13 @@ namespace Client
             switch (m.CommandName)
             {
                 case Comandi.Hello:
-                    if (m.Parametro(0) == "ok")
+                    int tavolo;
+                    if (int.TryParse(m.Parametro(0), out tavolo))
+                    {
+                        _tavolo = tavolo;
+                        AggiornaStato();
                         _client.Invia(Message.Crea(Comandi.GetMenu));
+                    }
                     break;
 
                 case Comandi.Menu:

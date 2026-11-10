@@ -21,7 +21,7 @@ namespace Client
 
         public bool Connesso { get { return _chiuso == 0; } }
 
-        public void Connetti(string ip, int porta, int tavolo)
+        public void Connetti(string ip, int porta)
         {
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
@@ -44,7 +44,7 @@ namespace Client
             t.IsBackground = true;
             t.Start();
 
-            Invia(Message.Crea(Comandi.Hello, tavolo.ToString()));
+            Invia(Message.Crea(Comandi.Hello)); // il server risponde con il tavolo assegnato
         }
 
         public bool Invia(Message m)

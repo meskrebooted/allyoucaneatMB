@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using allyoucaneat;
@@ -17,7 +19,11 @@ namespace Client
 
         private static readonly Color Rosso = Color.FromArgb(192, 57, 43);
         private static readonly Font FontPiatto = new Font("Segoe UI", 11F, FontStyle.Bold);
-        private static readonly Font FontCategoria = new Font("Segoe UI", 10F, FontStyle.Bold);
+        private static readonly Font FontCategoria = new Font("Segoe UI", 11F, FontStyle.Bold);
+
+        private const string CartellaImmaginiNome = "img_menu";
+        private static readonly Size DimensioneTile = new Size(214, 170);
+        private static readonly Size DimensioneFoto = new Size(196, 107); // stesso rapporto delle foto (1408x768)
 
         private readonly Client _client = new Client();
         private List<Piatto> _menu = new List<Piatto>();
@@ -25,6 +31,8 @@ namespace Client
         private readonly Queue<Ordine> _inAttesaConferma = new Queue<Ordine>();
         private string _categoriaCorrente = null; // null = tutte le categorie
         private int _tavolo = 0;                  // assegnato dal server dopo la connessione
+        private readonly Dictionary<string, Image> _cacheImmagini = new Dictionary<string, Image>();
+        private string _cartellaImmagini;
 
         public Form1()
         {
@@ -191,9 +199,11 @@ namespace Client
             Button b = new Button();
             b.Text = testo;
             b.Tag = categoria; // "" = tutte
-            b.Size = new Size(120, 42);
-            b.Margin = new Padding(0, 0, 8, 0);
+            b.Size = new Size(150, 48);
+            b.Margin = new Padding(0, 0, 0, 8);
             b.Font = FontCategoria;
+            b.TextAlign = ContentAlignment.MiddleLeft;
+            b.Padding = new Padding(10, 0, 0, 0);
             b.FlatStyle = FlatStyle.Flat;
             b.FlatAppearance.BorderColor = Color.FromArgb(220, 210, 200);
             b.Click += CategoriaClick;
@@ -229,27 +239,154 @@ namespace Client
             flowPiatti.ResumeLayout();
         }
 
-        private Button CreaPulsantePiatto(Piatto p)
+        // Tile del piatto: foto sopra, nome sotto. Un clic ovunque sul tile aggiunge il piatto al carrello.
+        private Control CreaPulsantePiatto(Piatto p)
         {
-            Button b = new Button();
-            b.Text = p.Disponibile ? p.Nome : p.Nome + "\n(esaurito)";
-            b.Enabled = p.Disponibile;
-            b.Tag = p;
-            b.Size = new Size(190, 90);
-            b.Margin = new Padding(8);
-            b.Font = FontPiatto;
-            b.BackColor = Color.White;
-            b.FlatStyle = FlatStyle.Flat;
-            b.FlatAppearance.BorderColor = Color.FromArgb(220, 210, 200);
-            b.FlatAppearance.MouseOverBackColor = Color.FromArgb(253, 236, 232);
-            b.Click += PiattoClick;
-            return b;
+            Panel tile = new Panel();
+            tile.Size = DimensioneTile;
+            tile.Margin = new Padding(8);
+            tile.BackColor = Color.White;
+            tile.Tag = p;
+            tile.Cursor = p.Disponibile ? Cursors.Hand : Cursors.Default;
+            tile.Paint += (s, e) =>
+            {
+                using (Pen penna = new Pen(Color.FromArgb(220, 210, 200)))
+                    e.Graphics.DrawRectangle(penna, 0, 0, tile.Width - 1, tile.Height - 1);
+            };
+
+            PictureBox foto = new PictureBox();
+            foto.SetBounds(9, 9, DimensioneFoto.Width, DimensioneFoto.Height);
+            foto.SizeMode = PictureBoxSizeMode.Normal;
+            foto.BackColor = Color.FromArgb(240, 235, 228);
+            foto.Image = CaricaImmagine(p.Immagine);
+            foto.Tag = p;
+            tile.Controls.Add(foto);
+
+            Label nome = new Label();
+            nome.AutoSize = false;
+            nome.SetBounds(9, 9 + DimensioneFoto.Height + 4, DimensioneFoto.Width, DimensioneTile.Height - DimensioneFoto.Height - 26);
+            nome.Text = p.Disponibile ? p.Nome : p.Nome + " (esaurito)";
+            nome.Font = FontPiatto;
+            nome.ForeColor = p.Disponibile ? Color.FromArgb(40, 40, 40) : Color.Gray;
+            nome.TextAlign = ContentAlignment.TopLeft;
+            nome.UseMnemonic = false;
+            nome.Tag = p;
+            tile.Controls.Add(nome);
+
+            if (p.Disponibile)
+            {
+                tile.Click += PiattoClick;
+                foto.Click += PiattoClick;
+                nome.Click += PiattoClick;
+
+                // evidenzia il tile quando il mouse e' sopra (anche sopra foto e nome)
+                EventHandler entra = (s, e) => tile.BackColor = Color.FromArgb(253, 236, 232);
+                EventHandler esce = (s, e) =>
+                {
+                    if (!tile.ClientRectangle.Contains(tile.PointToClient(Cursor.Position)))
+                        tile.BackColor = Color.White;
+                };
+                tile.MouseEnter += entra;
+                foto.MouseEnter += entra;
+                nome.MouseEnter += entra;
+                tile.MouseLeave += esce;
+                foto.MouseLeave += esce;
+                nome.MouseLeave += esce;
+            }
+            else
+            {
+                foto.Enabled = false; // la foto resta visibile ma il tile non e' cliccabile
+            }
+
+            return tile;
         }
 
         private void PiattoClick(object sender, EventArgs e)
         {
-            Piatto p = (Piatto)((Button)sender).Tag;
+            Piatto p = (Piatto)((Control)sender).Tag;
             AggiungiAlCarrello(p.Id, p.Nome, 1);
+        }
+
+        // ---------- Immagini del menu ----------
+
+        // Cerca la cartella img_menu accanto all'exe (copiata dalla build) oppure nelle cartelle superiori
+        // (utile quando si avvia dal progetto in Visual Studio: Client\bin\Debug -> ... -> radice del repo).
+        private string TrovaCartellaImmagini()
+        {
+            if (_cartellaImmagini != null)
+                return _cartellaImmagini;
+
+            string cartella = AppDomain.CurrentDomain.BaseDirectory;
+            for (int i = 0; i < 6 && !string.IsNullOrEmpty(cartella); i++)
+            {
+                string candidata = Path.Combine(cartella, CartellaImmaginiNome);
+                if (Directory.Exists(candidata))
+                    return _cartellaImmagini = candidata;
+
+                DirectoryInfo padre = Directory.GetParent(cartella);
+                cartella = padre == null ? null : padre.FullName;
+            }
+
+            return _cartellaImmagini = ""; // non trovata: i tile restano senza foto
+        }
+
+        // Le foto originali sono grandi (1408x768): le riduco una volta sola e le tengo in cache.
+        private Image CaricaImmagine(string nomeFile)
+        {
+            if (string.IsNullOrEmpty(nomeFile))
+                return null;
+
+            Image immagine;
+            if (_cacheImmagini.TryGetValue(nomeFile, out immagine))
+                return immagine;
+
+            immagine = null;
+            string cartella = TrovaCartellaImmagini();
+            if (cartella.Length > 0)
+            {
+                string percorso = Path.Combine(cartella, nomeFile);
+                try
+                {
+                    if (File.Exists(percorso))
+                    {
+                        // Leggo da FileStream e chiudo subito il file: cosi' non resta bloccato.
+                        using (FileStream fs = new FileStream(percorso, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        using (Image originale = Image.FromStream(fs))
+                            immagine = Ridimensiona(originale, DimensioneFoto);
+                    }
+                }
+                catch (Exception)
+                {
+                    immagine = null; // file rovinato: il tile resta senza foto
+                }
+            }
+
+            _cacheImmagini[nomeFile] = immagine;
+            return immagine;
+        }
+
+        // Ridimensiona riempiendo tutta l'area (ritaglia i bordi se il rapporto e' diverso).
+        private static Image Ridimensiona(Image originale, Size dimensione)
+        {
+            Bitmap risultato = new Bitmap(dimensione.Width, dimensione.Height);
+            using (Graphics g = Graphics.FromImage(risultato))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = SmoothingMode.HighQuality;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                float scala = Math.Max((float)dimensione.Width / originale.Width, (float)dimensione.Height / originale.Height);
+                float larghezzaOrigine = dimensione.Width / scala;
+                float altezzaOrigine = dimensione.Height / scala;
+                RectangleF origine = new RectangleF(
+                    (originale.Width - larghezzaOrigine) / 2F,
+                    (originale.Height - altezzaOrigine) / 2F,
+                    larghezzaOrigine, altezzaOrigine);
+
+                g.DrawImage(originale, new Rectangle(Point.Empty, dimensione), origine.X, origine.Y,
+                    origine.Width, origine.Height, GraphicsUnit.Pixel);
+            }
+            return risultato;
         }
 
         private static void SvuotaPannello(Control pannello)
@@ -409,7 +546,6 @@ namespace Client
             {
                 case StatoOrdine.InPreparazione: return "In preparazione";
                 case StatoOrdine.Pronto: return "Pronto";
-                case StatoOrdine.Servito: return "Servito";
                 default: return "Inviato";
             }
         }
@@ -420,7 +556,6 @@ namespace Client
             {
                 case StatoOrdine.InPreparazione: item.BackColor = Color.LemonChiffon; break;
                 case StatoOrdine.Pronto: item.BackColor = Color.LightGreen; break;
-                case StatoOrdine.Servito: item.BackColor = Color.LightGray; break;
                 default: item.BackColor = Color.White; break;
             }
         }

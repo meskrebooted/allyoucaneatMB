@@ -19,6 +19,7 @@
         {
             this.components = new System.ComponentModel.Container();
             this.panelCentro = new System.Windows.Forms.Panel();
+            this.panelSinistra = new System.Windows.Forms.Panel();
             this.flowPiatti = new System.Windows.Forms.FlowLayoutPanel();
             this.lblBanner = new System.Windows.Forms.Label();
             this.flowCategorie = new System.Windows.Forms.FlowLayoutPanel();
@@ -48,6 +49,7 @@
             this.btnDisconnetti = new System.Windows.Forms.Button();
             this.timerBanner = new System.Windows.Forms.Timer(this.components);
             this.panelCentro.SuspendLayout();
+            this.panelSinistra.SuspendLayout();
             this.panelDestra.SuspendLayout();
             this.panelAzioni.SuspendLayout();
             this.panelOrdiniInviati.SuspendLayout();
@@ -59,21 +61,20 @@
             this.panelCentro.BackColor = System.Drawing.Color.FromArgb(250, 246, 240);
             this.panelCentro.Controls.Add(this.flowPiatti);
             this.panelCentro.Controls.Add(this.lblBanner);
-            this.panelCentro.Controls.Add(this.flowCategorie);
             this.panelCentro.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelCentro.Location = new System.Drawing.Point(0, 80);
+            this.panelCentro.Location = new System.Drawing.Point(180, 80);
             this.panelCentro.Name = "panelCentro";
-            this.panelCentro.Size = new System.Drawing.Size(920, 720);
+            this.panelCentro.Size = new System.Drawing.Size(740, 720);
             this.panelCentro.TabIndex = 0;
             //
             // flowPiatti
             //
             this.flowPiatti.AutoScroll = true;
             this.flowPiatti.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowPiatti.Location = new System.Drawing.Point(0, 62);
+            this.flowPiatti.Location = new System.Drawing.Point(0, 0);
             this.flowPiatti.Name = "flowPiatti";
             this.flowPiatti.Padding = new System.Windows.Forms.Padding(8);
-            this.flowPiatti.Size = new System.Drawing.Size(920, 610);
+            this.flowPiatti.Size = new System.Drawing.Size(740, 672);
             this.flowPiatti.TabIndex = 0;
             //
             // lblBanner
@@ -84,20 +85,31 @@
             this.lblBanner.ForeColor = System.Drawing.Color.FromArgb(20, 90, 50);
             this.lblBanner.Location = new System.Drawing.Point(0, 672);
             this.lblBanner.Name = "lblBanner";
-            this.lblBanner.Size = new System.Drawing.Size(920, 48);
+            this.lblBanner.Size = new System.Drawing.Size(740, 48);
             this.lblBanner.TabIndex = 1;
             this.lblBanner.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.lblBanner.Visible = false;
             //
+            // panelSinistra
+            //
+            this.panelSinistra.BackColor = System.Drawing.Color.White;
+            this.panelSinistra.Controls.Add(this.flowCategorie);
+            this.panelSinistra.Dock = System.Windows.Forms.DockStyle.Left;
+            this.panelSinistra.Location = new System.Drawing.Point(0, 80);
+            this.panelSinistra.Name = "panelSinistra";
+            this.panelSinistra.Size = new System.Drawing.Size(180, 720);
+            this.panelSinistra.TabIndex = 3;
+            //
             // flowCategorie
             //
             this.flowCategorie.AutoScroll = true;
-            this.flowCategorie.Dock = System.Windows.Forms.DockStyle.Top;
+            this.flowCategorie.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowCategorie.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flowCategorie.Location = new System.Drawing.Point(0, 0);
             this.flowCategorie.Name = "flowCategorie";
-            this.flowCategorie.Padding = new System.Windows.Forms.Padding(12, 10, 12, 0);
-            this.flowCategorie.Size = new System.Drawing.Size(920, 62);
-            this.flowCategorie.TabIndex = 2;
+            this.flowCategorie.Padding = new System.Windows.Forms.Padding(10, 12, 0, 0);
+            this.flowCategorie.Size = new System.Drawing.Size(180, 720);
+            this.flowCategorie.TabIndex = 0;
             this.flowCategorie.WrapContents = false;
             //
             // panelDestra
@@ -375,6 +387,7 @@
             this.BackColor = System.Drawing.Color.FromArgb(250, 246, 240);
             this.ClientSize = new System.Drawing.Size(1280, 800);
             this.Controls.Add(this.panelCentro);
+            this.Controls.Add(this.panelSinistra);
             this.Controls.Add(this.panelDestra);
             this.Controls.Add(this.panelTop);
             this.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -384,6 +397,7 @@
             this.Text = "Tablet - All You Can Eat";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.panelCentro.ResumeLayout(false);
+            this.panelSinistra.ResumeLayout(false);
             this.panelDestra.ResumeLayout(false);
             this.panelAzioni.ResumeLayout(false);
             this.panelAzioni.PerformLayout();
@@ -396,6 +410,7 @@
         #endregion
 
         private System.Windows.Forms.Panel panelCentro;
+        private System.Windows.Forms.Panel panelSinistra;
         private System.Windows.Forms.FlowLayoutPanel flowPiatti;
         private System.Windows.Forms.Label lblBanner;
         private System.Windows.Forms.FlowLayoutPanel flowCategorie;

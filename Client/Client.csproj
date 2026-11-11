@@ -87,5 +87,12 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Foto del menu: la cartella img_menu (nella radice del repo) viene copiata accanto all'exe -->
+    <Content Include="..\img_menu\*.jpg">
+      <Link>img_menu\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -12,7 +12,7 @@ using Message = allyoucaneat.Message; // evita il conflitto con System.Windows.F
 namespace Client
 {
     // Display del tablet: menu per categorie, carrello, invio dell'ordine alla cucina
-    // e stato degli ordini inviati (aggiornato quando la cucina preme "In preparazione" / "Pronto").
+    // e stato degli ordini inviati (aggiornato quando la cucina preme "In preparazione" / "Servito" o cancella l'ordine).
     public partial class Form1 : Form
     {
         private const int Porta = 5000;
@@ -536,6 +536,10 @@ namespace Client
 
                 if (stato == StatoOrdine.Pronto)
                     MostraBanner("Il tuo ordine è pronto!");
+                else if (stato == StatoOrdine.Servito)
+                    MostraBanner("Il tuo ordine sta arrivando al tavolo!");
+                else if (stato == StatoOrdine.Annullato)
+                    MostraBanner("L'ordine è stato annullato dalla cucina.");
                 return;
             }
         }
@@ -546,6 +550,8 @@ namespace Client
             {
                 case StatoOrdine.InPreparazione: return "In preparazione";
                 case StatoOrdine.Pronto: return "Pronto";
+                case StatoOrdine.Servito: return "Servito";
+                case StatoOrdine.Annullato: return "Annullato";
                 default: return "Inviato";
             }
         }
@@ -556,6 +562,8 @@ namespace Client
             {
                 case StatoOrdine.InPreparazione: item.BackColor = Color.LemonChiffon; break;
                 case StatoOrdine.Pronto: item.BackColor = Color.LightGreen; break;
+                case StatoOrdine.Servito: item.BackColor = Color.LightGray; break;
+                case StatoOrdine.Annullato: item.BackColor = Color.MistyRose; break;
                 default: item.BackColor = Color.White; break;
             }
         }
@@ -581,6 +589,13 @@ namespace Client
         {
             if (_client.Connesso)
                 _client.Disconnetti();
+
+            foreach (Image immagine in _cacheImmagini.Values)
+            {
+                if (immagine != null)
+                    immagine.Dispose();
+            }
+            _cacheImmagini.Clear();
         }
     }
 }

@@ -5,6 +5,7 @@ namespace allyoucaneat
         Inviato,
         InPreparazione,
         Pronto,
-        Servito
+        Servito,
+        Annullato
     }
 }

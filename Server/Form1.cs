@@ -6,13 +6,14 @@ using System.Windows.Forms;
 namespace allyoucaneat
 {
     // Display della cucina: avvia il server, mostra gli ordini in arrivo
-    // e permette al cuoco di cambiarne lo stato (l'aggiornamento arriva al tablet del tavolo).
+    // come scontrini (uno per ordine) e permette al cuoco di cambiarne lo stato (l'aggiornamento arriva al tablet del tavolo).
     public partial class Form1 : Form
     {
         private const int Porta = 5000;
 
         private readonly Server _server = new Server();
         private readonly HashSet<int> _tavoliConnessi = new HashSet<int>();
+        private readonly Dictionary<string, Scontrino> _scontrini = new Dictionary<string, Scontrino>();
 
         public Form1()
         {
@@ -72,88 +73,62 @@ namespace allyoucaneat
                 ? "In ascolto - tavoli connessi: " + _tavoliConnessi.Count
                 : "Server fermato";
             lblStato.ForeColor = attivo ? Color.LightGreen : Color.Silver;
-
-            AggiornaPulsanti();
         }
 
-        // I pulsanti di stato servono solo se c'e' un ordine selezionato.
-        private void AggiornaPulsanti()
-        {
-            bool haSelezione = dgvOrdini.CurrentRow != null;
-            btnInPreparazione.Enabled = haSelezione;
-            btnPronto.Enabled = haSelezione;
-            btnServito.Enabled = haSelezione;
-        }
+        // ---------- Scontrini ----------
 
-        private void dgvOrdini_SelectionChanged(object sender, EventArgs e)
-        {
-            AggiornaPulsanti();
-        }
-
-        // ---------- Ordini ----------
-
+        // Ogni ordine in arrivo diventa uno scontrino con i suoi pulsanti.
         private void AggiungiOrdine(Ordine ordine)
         {
-            int indice = dgvOrdini.Rows.Add(
-                ordine.Id,
-                ordine.Tavolo,
-                ordine.Ora.ToString("HH:mm:ss"),
-                ordine.Riepilogo(),
-                ordine.Stato.ToString());
+            Scontrino scontrino = new Scontrino(ordine);
+            scontrino.CambioStatoRichiesto += CambiaStato;
+            scontrino.CancellaRichiesto += CancellaOrdine;
 
-            ColoraRiga(dgvOrdini.Rows[indice], ordine.Stato);
+            _scontrini[ordine.Id] = scontrino;
+            flowScontrini.Controls.Add(scontrino);
+
+            // i nuovi scontrini vanno dopo quelli ancora da gestire ma prima di quelli gia' serviti
+            flowScontrini.Controls.SetChildIndex(scontrino, ScontriniAttivi());
         }
 
-        private void btnInPreparazione_Click(object sender, EventArgs e)
+        private int ScontriniAttivi()
         {
-            CambiaStatoSelezionato(StatoOrdine.InPreparazione);
-        }
-
-        private void btnPronto_Click(object sender, EventArgs e)
-        {
-            CambiaStatoSelezionato(StatoOrdine.Pronto);
-        }
-
-        private void btnServito_Click(object sender, EventArgs e)
-        {
-            CambiaStatoSelezionato(StatoOrdine.Servito);
-        }
-
-        private void CambiaStatoSelezionato(StatoOrdine nuovoStato)
-        {
-            DataGridViewRow riga = dgvOrdini.CurrentRow;
-            if (riga == null)
+            int n = 0;
+            foreach (Scontrino s in _scontrini.Values)
             {
-                MessageBox.Show("Seleziona prima un ordine.", "Cucina",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (!s.Servito)
+                    n++;
+            }
+            return n - 1; // il nuovo scontrino e' gia' nel dizionario ed e' attivo
+        }
+
+        private void CambiaStato(Scontrino scontrino, StatoOrdine nuovoStato)
+        {
+            if (!_server.CambiaStato(scontrino.Ordine.Id, nuovoStato))
                 return;
-            }
 
-            string idOrdine = riga.Cells[colId.Index].Value as string;
-            if (_server.CambiaStato(idOrdine, nuovoStato))
-            {
-                riga.Cells[colStato.Index].Value = nuovoStato.ToString();
-                ColoraRiga(riga, nuovoStato);
-            }
+            scontrino.Aggiorna();
+
+            // gli scontrini serviti scivolano in fondo, cosi' a sinistra restano quelli da preparare
+            if (nuovoStato == StatoOrdine.Servito)
+                flowScontrini.Controls.SetChildIndex(scontrino, flowScontrini.Controls.Count - 1);
         }
 
-        private static void ColoraRiga(DataGridViewRow riga, StatoOrdine stato)
+        private void CancellaOrdine(Scontrino scontrino)
         {
-            switch (stato)
-            {
-                case StatoOrdine.InPreparazione:
-                    riga.DefaultCellStyle.BackColor = Color.LemonChiffon;
-                    break;
-                case StatoOrdine.Pronto:
-                    riga.DefaultCellStyle.BackColor = Color.LightGreen;
-                    break;
-                case StatoOrdine.Servito:
-                    riga.DefaultCellStyle.BackColor = Color.LightGray;
-                    break;
-                default:
-                    riga.DefaultCellStyle.BackColor = Color.White;
-                    break;
-            }
+            DialogResult risposta = MessageBox.Show(
+                "Cancellare l'ordine del tavolo " + scontrino.Ordine.Tavolo + "?\n\n" + scontrino.Ordine.Riepilogo(),
+                "Cancella ordine", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (risposta != DialogResult.Yes)
+                return;
+
+            // il tablet del tavolo viene avvisato con lo stato "Annullato"
+            if (!_server.CambiaStato(scontrino.Ordine.Id, StatoOrdine.Annullato))
+                return;
+
+            _scontrini.Remove(scontrino.Ordine.Id);
+            flowScontrini.Controls.Remove(scontrino);
+            scontrino.Dispose();
         }
 
         // ---------- Chiusura ----------

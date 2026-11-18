@@ -49,12 +49,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Comandi.cs" />
-    <Compile Include="Message.cs" />
-    <Compile Include="Ordine.cs" />
-    <Compile Include="Piatto.cs" />
-    <Compile Include="RigaOrdine.cs" />
-    <Compile Include="StatoOrdine.cs" />
+    <Compile Include="Protocollo.cs" />
+    <Compile Include="Modelli.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>

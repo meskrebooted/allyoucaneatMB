@@ -1,19 +1,19 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace allyoucaneat
 {
-    // Display della cucina: avvia il server, mostra gli ordini in arrivo
-    // come scontrini (uno per ordine) e permette al cuoco di cambiarne lo stato (l'aggiornamento arriva al tablet del tavolo).
+    // Display della cucina: avvia il server, mostra gli ordini in arrivo come scontrini
+    // (uno per ordine) e permette al cuoco di cambiarne lo stato (il tablet del tavolo viene avvisato).
     public partial class Form1 : Form
     {
         private const int Porta = 5000;
 
         private readonly Server _server = new Server();
-        private readonly HashSet<int> _tavoliConnessi = new HashSet<int>();
-        private readonly Dictionary<string, Scontrino> _scontrini = new Dictionary<string, Scontrino>();
+        private readonly List<Scontrino> _scontrini = new List<Scontrino>();   // in ordine di arrivo
 
         public Form1()
         {
@@ -21,8 +21,7 @@ namespace allyoucaneat
 
             _server.Log += testo => EseguiSuUI(() => txtLog.AppendText(testo + Environment.NewLine));
             _server.OrdineRicevuto += ordine => EseguiSuUI(() => AggiungiOrdine(ordine));
-            _server.TavoloConnesso += tavolo => EseguiSuUI(() => { _tavoliConnessi.Add(tavolo); AggiornaStatoServer(); });
-            _server.TavoloDisconnesso += tavolo => EseguiSuUI(() => { _tavoliConnessi.Remove(tavolo); AggiornaStatoServer(); });
+            _server.TavoliCambiati += () => EseguiSuUI(AggiornaStatoServer);
 
             AggiornaStatoServer();
         }
@@ -58,7 +57,6 @@ namespace allyoucaneat
         private void btnFerma_Click(object sender, EventArgs e)
         {
             _server.Ferma();
-            _tavoliConnessi.Clear();
             AggiornaStatoServer();
         }
 
@@ -70,7 +68,7 @@ namespace allyoucaneat
             btnFerma.Enabled = attivo;
 
             lblStato.Text = attivo
-                ? "In ascolto - tavoli connessi: " + _tavoliConnessi.Count
+                ? "In ascolto - tavoli connessi: " + _server.TavoliConnessi
                 : "Server fermato";
             lblStato.ForeColor = attivo ? Color.LightGreen : Color.Silver;
         }
@@ -84,34 +82,28 @@ namespace allyoucaneat
             scontrino.CambioStatoRichiesto += CambiaStato;
             scontrino.CancellaRichiesto += CancellaOrdine;
 
-            _scontrini[ordine.Id] = scontrino;
+            _scontrini.Add(scontrino);
             flowScontrini.Controls.Add(scontrino);
-
-            // i nuovi scontrini vanno dopo quelli ancora da gestire ma prima di quelli gia' serviti
-            flowScontrini.Controls.SetChildIndex(scontrino, ScontriniAttivi());
+            RiordinaScontrini();
         }
 
-        private int ScontriniAttivi()
+        // Prima gli scontrini ancora da gestire, poi quelli serviti (in fondo).
+        private void RiordinaScontrini()
         {
-            int n = 0;
-            foreach (Scontrino s in _scontrini.Values)
-            {
-                if (!s.Servito)
-                    n++;
-            }
-            return n - 1; // il nuovo scontrino e' gia' nel dizionario ed e' attivo
+            int posizione = 0;
+
+            foreach (Scontrino da in _scontrini.Where(x => !x.Servito))
+                flowScontrini.Controls.SetChildIndex(da, posizione++);
+
+            foreach (Scontrino servito in _scontrini.Where(x => x.Servito))
+                flowScontrini.Controls.SetChildIndex(servito, posizione++);
         }
 
         private void CambiaStato(Scontrino scontrino, StatoOrdine nuovoStato)
         {
-            if (!_server.CambiaStato(scontrino.Ordine.Id, nuovoStato))
-                return;
-
+            _server.CambiaStato(scontrino.Ordine, nuovoStato);
             scontrino.Aggiorna();
-
-            // gli scontrini serviti scivolano in fondo, cosi' a sinistra restano quelli da preparare
-            if (nuovoStato == StatoOrdine.Servito)
-                flowScontrini.Controls.SetChildIndex(scontrino, flowScontrini.Controls.Count - 1);
+            RiordinaScontrini();
         }
 
         private void CancellaOrdine(Scontrino scontrino)
@@ -123,10 +115,9 @@ namespace allyoucaneat
                 return;
 
             // il tablet del tavolo viene avvisato con lo stato "Annullato"
-            if (!_server.CambiaStato(scontrino.Ordine.Id, StatoOrdine.Annullato))
-                return;
+            _server.CambiaStato(scontrino.Ordine, StatoOrdine.Annullato);
 
-            _scontrini.Remove(scontrino.Ordine.Id);
+            _scontrini.Remove(scontrino);
             flowScontrini.Controls.Remove(scontrino);
             scontrino.Dispose();
         }

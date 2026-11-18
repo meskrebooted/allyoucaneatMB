@@ -1,50 +1,46 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using Newtonsoft.Json;
 
 namespace allyoucaneat
 {
-    // Gestisce UN tablet connesso. Viene eseguito in un thread dedicato (come nello scheletro).
+    // Gestisce UN tablet connesso. DoClient gira in un thread dedicato (uno per client).
+    // Sul socket viaggiano righe di JSON terminate da '\n' (UTF-8): StreamReader/StreamWriter
+    // leggono e scrivono una riga alla volta sopra lo stesso socket.
     public class ClientManager
     {
-        private const int MaxLunghezzaRiga = 1000000; // protezione: 1 milione di caratteri
-
         private readonly Socket _socket;
         private readonly Server _server;
-        private readonly byte[] _buffer = new byte[4096];
-        private readonly char[] _chars;
-        private readonly Decoder _decoder = Encoding.UTF8.GetDecoder();
+        private readonly StreamReader _reader;
+        private readonly StreamWriter _writer;
         private readonly object _lockInvio = new object();
+        private readonly object _lockChiusura = new object();
+        private bool _chiuso;
 
-        private string _pending = "";
-        private int _tavolo = -1;
-        private int _chiuso = 0;
-
-        public int Tavolo { get { return _tavolo; } }
-
-        // Chiamato solo dal Server (dentro il suo lock) quando assegna il tavolo.
-        public void ImpostaTavolo(int tavolo)
-        {
-            _tavolo = tavolo;
-        }
+        public int Tavolo { get; set; }   // 0 = non ancora assegnato (lo imposta il Server)
 
         public ClientManager(Socket socket, Server server)
         {
             _socket = socket;
             _server = server;
-            _chars = new char[Encoding.UTF8.GetMaxCharCount(_buffer.Length)];
+
+            NetworkStream stream = new NetworkStream(socket);
+            _reader = new StreamReader(stream, Encoding.UTF8);
+            _writer = new StreamWriter(stream, new UTF8Encoding(false)); // false = senza BOM
+            _writer.NewLine = "\n";
+            _writer.AutoFlush = true;
         }
 
-        // Metodo eseguito dal thread del client.
+        // Eseguito dal thread del client: legge un messaggio alla volta fino alla disconnessione.
         public void DoClient()
         {
             try
             {
                 string riga;
-                while ((riga = LeggiRiga()) != null)
+                while ((riga = _reader.ReadLine()) != null)
                 {
                     if (riga.Length == 0)
                         continue;
@@ -66,70 +62,60 @@ namespace allyoucaneat
                         continue;
                     }
 
-                    if (!Gestisci(m))
-                        break; // "quit"
+                    if (m.CommandName == Comandi.Quit)
+                        break;
+
+                    Gestisci(m);
                 }
             }
-            catch (SocketException) { }
+            catch (IOException) { }                  // connessione interrotta o chiusa
             catch (ObjectDisposedException) { }
-            catch (InvalidDataException) { }
             finally
             {
                 Chiudi();
             }
         }
 
-        // Ritorna false se il client ha chiesto di chiudere.
-        private bool Gestisci(Message m)
+        private void Gestisci(Message m)
         {
+            // Menu e ordini si possono chiedere solo dopo "hello" (quando il tavolo e' assegnato).
+            bool serveTavolo = m.CommandName == Comandi.GetMenu || m.CommandName == Comandi.NewOrder;
+            if (serveTavolo && Tavolo == 0)
+            {
+                Invia(Message.Crea(Comandi.Error, "Invia prima il comando hello con il numero di tavolo"));
+                return;
+            }
+
             switch (m.CommandName)
             {
                 case Comandi.Hello:
-                    GestisciHello();
-                    return true;
+                    if (Tavolo == 0)
+                        _server.AssegnaTavolo(this);
+                    Invia(Message.Crea(Comandi.Hello, Tavolo.ToString()));
+                    break;
 
                 case Comandi.GetMenu:
-                    if (!TavoloRegistrato()) return true;
-                    string jsonMenu = JsonConvert.SerializeObject(_server.GetMenu());
-                    Invia(Message.Crea(Comandi.Menu, jsonMenu));
-                    return true;
+                    Invia(Message.Crea(Comandi.Menu, JsonConvert.SerializeObject(_server.Menu)));
+                    break;
 
                 case Comandi.NewOrder:
-                    if (!TavoloRegistrato()) return true;
                     GestisciNuovoOrdine(m);
-                    return true;
-
-                case Comandi.Quit:
-                    return false;
+                    break;
 
                 default:
                     Invia(Message.Crea(Comandi.Error, "Comando sconosciuto: " + m.CommandName));
-                    return true;
+                    break;
             }
-        }
-
-        // Il tavolo non lo sceglie il client: lo assegna il server (primo numero libero).
-        private void GestisciHello()
-        {
-            if (_tavolo <= 0)
-            {
-                if (_server.AssegnaTavolo(this) <= 0)
-                {
-                    Invia(Message.Crea(Comandi.Error, "Server non disponibile"));
-                    return;
-                }
-            }
-
-            Invia(Message.Crea(Comandi.Hello, _tavolo.ToString()));
         }
 
         private void GestisciNuovoOrdine(Message m)
         {
             string json = m.Parametro(0);
-            Ordine ordine;
+            Ordine ordine = null;
             try
             {
-                ordine = string.IsNullOrEmpty(json) ? null : JsonConvert.DeserializeObject<Ordine>(json);
+                if (!string.IsNullOrEmpty(json))
+                    ordine = JsonConvert.DeserializeObject<Ordine>(json);
             }
             catch (JsonException)
             {
@@ -143,18 +129,15 @@ namespace allyoucaneat
                 return;
             }
 
-            foreach (RigaOrdine r in ordine.Righe)
+            if (ordine.Righe.Any(r => r == null || r.Quantita <= 0))
             {
-                if (r == null || r.Quantita <= 0)
-                {
-                    Invia(Message.Crea(Comandi.Error, "Quantita non valida"));
-                    return;
-                }
+                Invia(Message.Crea(Comandi.Error, "Quantita non valida"));
+                return;
             }
 
-            // I dati importanti li decide il server, non il client.
+            // I dati importanti li decide il server, non il tablet.
             ordine.Id = Guid.NewGuid().ToString();
-            ordine.Tavolo = _tavolo;
+            ordine.Tavolo = Tavolo;
             ordine.Ora = DateTime.Now;
             ordine.Stato = StatoOrdine.Inviato;
 
@@ -162,66 +145,31 @@ namespace allyoucaneat
             Invia(Message.Crea(Comandi.OrderReceived, ordine.Id));
         }
 
-        private bool TavoloRegistrato()
+        // Puo' essere chiamato da qualsiasi thread (es. dal server quando il cuoco cambia lo stato).
+        public void Invia(Message m)
         {
-            if (_tavolo > 0)
-                return true;
-            Invia(Message.Crea(Comandi.Error, "Invia prima il comando hello con il numero di tavolo"));
-            return false;
-        }
-
-        // Legge una riga completa (fino a '\n'). Ritorna null se il client si e' disconnesso.
-        // _pending conserva i caratteri gia' ricevuti, quindi piu' messaggi arrivati insieme non si perdono.
-        private string LeggiRiga()
-        {
-            while (true)
-            {
-                int idx = _pending.IndexOf('\n');
-                if (idx >= 0)
-                {
-                    string riga = _pending.Substring(0, idx).TrimEnd('\r');
-                    _pending = _pending.Substring(idx + 1);
-                    return riga;
-                }
-
-                if (_pending.Length > MaxLunghezzaRiga)
-                    throw new InvalidDataException("Messaggio troppo lungo");
-
-                int n = _socket.Receive(_buffer);
-                if (n == 0)
-                    return null;
-
-                int nc = _decoder.GetChars(_buffer, 0, n, _chars, 0);
-                _pending += new string(_chars, 0, nc);
-            }
-        }
-
-        // Puo' essere chiamato da qualsiasi thread (es. dal server quando il cuoco preme "Pronto").
-        public bool Invia(Message m)
-        {
-            if (_chiuso != 0)
-                return false;
-
             try
             {
-                byte[] dati = Encoding.UTF8.GetBytes(m.ToJson() + "\n");
                 lock (_lockInvio)
                 {
-                    _socket.Send(dati);
+                    _writer.WriteLine(m.ToJson());
                 }
-                return true;
             }
-            catch (SocketException) { return false; }
-            catch (ObjectDisposedException) { return false; }
+            catch (IOException) { }
+            catch (ObjectDisposedException) { }
         }
 
         public void Chiudi()
         {
-            if (Interlocked.Exchange(ref _chiuso, 1) == 1)
-                return; // gia' chiuso
+            lock (_lockChiusura)
+            {
+                if (_chiuso)
+                    return;   // gia' chiuso
+                _chiuso = true;
+            }
 
             try { _socket.Shutdown(SocketShutdown.Both); } catch { }
-            try { _socket.Close(); } catch { }
+            _socket.Close();
 
             _server.ClientChiuso(this);
         }

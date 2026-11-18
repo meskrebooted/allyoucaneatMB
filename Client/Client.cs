@@ -1,31 +1,37 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using allyoucaneat;
 using Newtonsoft.Json;
 
 namespace Client
 {
-    // Logica di rete del tablet. Gli eventi arrivano dal thread di ascolto:
-    // la form deve usare Invoke/BeginInvoke per toccare i controlli.
+    // Parte di rete del tablet. Gli eventi partono dal thread di ascolto:
+    // la form deve usare BeginInvoke per toccare i controlli.
+    // Sul socket viaggiano righe di JSON terminate da '\n' (UTF-8): StreamReader/StreamWriter
+    // leggono e scrivono una riga alla volta sopra lo stesso socket.
     public class Client
     {
         private Socket _socket;
+        private StreamReader _reader;
+        private StreamWriter _writer;
         private readonly object _lockInvio = new object();
-        private int _chiuso = 1; // 1 = non connesso
+        private readonly object _lockChiusura = new object();
+        private volatile bool _connesso;
 
         public event Action<Message> MessaggioRicevuto;
         public event Action Disconnesso;
 
-        public bool Connesso { get { return _chiuso == 0; } }
+        public bool Connesso { get { return _connesso; } }
 
         public void Connetti(string ip, int porta)
         {
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
             {
+                // Connessione con timeout di 3 secondi
                 IAsyncResult ar = s.BeginConnect(IPAddress.Parse(ip), porta, null, null);
                 if (!ar.AsyncWaitHandle.WaitOne(3000))
                     throw new TimeoutException("Il server non risponde");
@@ -38,7 +44,12 @@ namespace Client
             }
 
             _socket = s;
-            _chiuso = 0;
+            NetworkStream stream = new NetworkStream(s);
+            _reader = new StreamReader(stream, Encoding.UTF8);
+            _writer = new StreamWriter(stream, new UTF8Encoding(false)); // false = senza BOM
+            _writer.NewLine = "\n";
+            _writer.AutoFlush = true;
+            _connesso = true;
 
             Thread t = new Thread(Ascolta);
             t.IsBackground = true;
@@ -49,19 +60,18 @@ namespace Client
 
         public bool Invia(Message m)
         {
-            if (_chiuso != 0)
+            if (!_connesso)
                 return false;
 
             try
             {
-                byte[] dati = Encoding.UTF8.GetBytes(m.ToJson() + "\n");
                 lock (_lockInvio)
                 {
-                    _socket.Send(dati);
+                    _writer.WriteLine(m.ToJson());
                 }
                 return true;
             }
-            catch (SocketException) { return false; }
+            catch (IOException) { return false; }
             catch (ObjectDisposedException) { return false; }
         }
 
@@ -71,41 +81,32 @@ namespace Client
             Chiudi();
         }
 
-        // Thread di ascolto: legge righe JSON dal server finche' la connessione resta aperta.
+        // Thread di ascolto: legge un messaggio alla volta finche' la connessione resta aperta.
         private void Ascolta()
         {
-            byte[] buffer = new byte[4096];
-            Decoder decoder = Encoding.UTF8.GetDecoder();
-            char[] chars = new char[Encoding.UTF8.GetMaxCharCount(buffer.Length)];
-            StringBuilder pending = new StringBuilder();
-
             try
             {
-                while (true)
+                string riga;
+                while ((riga = _reader.ReadLine()) != null)
                 {
-                    int n = _socket.Receive(buffer);
-                    if (n == 0)
-                        break; // il server ha chiuso
+                    if (riga.Length == 0)
+                        continue;
 
-                    int nc = decoder.GetChars(buffer, 0, n, chars, 0);
-                    pending.Append(chars, 0, nc);
-
-                    // Estraggo tutte le righe complete, tengo il resto per il prossimo giro.
-                    string testo = pending.ToString();
-                    int start = 0;
-                    int idx;
-                    while ((idx = testo.IndexOf('\n', start)) >= 0)
+                    Message m;
+                    try
                     {
-                        string riga = testo.Substring(start, idx - start).TrimEnd('\r');
-                        start = idx + 1;
-                        if (riga.Length > 0)
-                            Elabora(riga);
+                        m = Message.FromJson(riga);
                     }
-                    pending.Clear();
-                    pending.Append(testo, start, testo.Length - start);
+                    catch (JsonException)
+                    {
+                        continue; // riga non valida: la ignoro
+                    }
+
+                    if (m != null)
+                        MessaggioRicevuto?.Invoke(m);
                 }
             }
-            catch (SocketException) { }
+            catch (IOException) { }                  // connessione interrotta o chiusa
             catch (ObjectDisposedException) { }
             finally
             {
@@ -113,26 +114,17 @@ namespace Client
             }
         }
 
-        private void Elabora(string riga)
-        {
-            Message m = null;
-            try
-            {
-                m = Message.FromJson(riga);
-            }
-            catch (JsonException) { }
-
-            if (m != null)
-                MessaggioRicevuto?.Invoke(m);
-        }
-
         private void Chiudi()
         {
-            if (Interlocked.Exchange(ref _chiuso, 1) == 1)
-                return; // gia' chiuso
+            lock (_lockChiusura)
+            {
+                if (!_connesso)
+                    return;   // gia' chiuso
+                _connesso = false;
+            }
 
             try { _socket.Shutdown(SocketShutdown.Both); } catch { }
-            try { _socket.Close(); } catch { }
+            _socket.Close();
 
             Disconnesso?.Invoke();
         }

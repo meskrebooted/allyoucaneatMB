@@ -5,34 +5,27 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using allyoucaneat;
 using Newtonsoft.Json;
-using Message = allyoucaneat.Message; // evita il conflitto con System.Windows.Forms.Message
 
 namespace Client
 {
     // Display del tablet: menu per categorie, carrello, invio dell'ordine alla cucina
-    // e stato degli ordini inviati (aggiornato quando la cucina preme "In preparazione" / "Servito" o cancella l'ordine).
+    // e stato degli ordini inviati (aggiornato quando la cucina cambia lo stato o cancella l'ordine).
     public partial class Form1 : Form
     {
         private const int Porta = 5000;
 
         private static readonly Color Rosso = Color.FromArgb(192, 57, 43);
-        private static readonly Font FontPiatto = new Font("Segoe UI", 11F, FontStyle.Bold);
-        private static readonly Font FontCategoria = new Font("Segoe UI", 11F, FontStyle.Bold);
-
-        private const string CartellaImmaginiNome = "img_menu";
-        private static readonly Size DimensioneTile = new Size(214, 170);
-        private static readonly Size DimensioneFoto = new Size(196, 107); // stesso rapporto delle foto (1408x768)
+        private static readonly Font FontTesto = new Font("Segoe UI", 11F, FontStyle.Bold);
+        private static readonly Size DimensioneFoto = new Size(196, 107);
 
         private readonly Client _client = new Client();
-        private List<Piatto> _menu = new List<Piatto>();
         private readonly List<RigaOrdine> _carrello = new List<RigaOrdine>();
         private readonly Queue<Ordine> _inAttesaConferma = new Queue<Ordine>();
-        private string _categoriaCorrente = null; // null = tutte le categorie
-        private int _tavolo = 0;                  // assegnato dal server dopo la connessione
-        private readonly Dictionary<string, Image> _cacheImmagini = new Dictionary<string, Image>();
-        private string _cartellaImmagini;
+        private readonly Dictionary<string, Image> _immagini = new Dictionary<string, Image>(); // foto gia' caricate
+        private List<Piatto> _menu = new List<Piatto>();
+        private string _categoriaCorrente;   // null = tutte le categorie
+        private int _tavolo;                 // assegnato dal server dopo la connessione
 
         public Form1()
         {
@@ -173,35 +166,29 @@ namespace Client
             }
             catch (JsonException)
             {
-                MessageBox.Show("Menu ricevuto non valido.", "Errore",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Menu ricevuto non valido.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            CostruisciCategorie();
-            MostraPiatti();
-        }
-
-        private void CostruisciCategorie()
-        {
+            // Pulsanti delle categorie: "Tutti" (categoria null) + una per ogni categoria del menu
             SvuotaPannello(flowCategorie);
-
-            flowCategorie.Controls.Add(CreaPulsanteCategoria("Tutti", ""));
+            flowCategorie.Controls.Add(CreaPulsanteCategoria("Tutti", null));
             foreach (string categoria in _menu.Select(p => p.Categoria).Where(c => !string.IsNullOrEmpty(c)).Distinct())
                 flowCategorie.Controls.Add(CreaPulsanteCategoria(categoria, categoria));
 
             _categoriaCorrente = null;
             EvidenziaCategoria();
+            MostraPiatti();
         }
 
         private Button CreaPulsanteCategoria(string testo, string categoria)
         {
             Button b = new Button();
             b.Text = testo;
-            b.Tag = categoria; // "" = tutte
+            b.Tag = categoria;   // null = tutte
             b.Size = new Size(150, 48);
             b.Margin = new Padding(0, 0, 0, 8);
-            b.Font = FontCategoria;
+            b.Font = FontTesto;
             b.TextAlign = ContentAlignment.MiddleLeft;
             b.Padding = new Padding(10, 0, 0, 0);
             b.FlatStyle = FlatStyle.Flat;
@@ -212,8 +199,7 @@ namespace Client
 
         private void CategoriaClick(object sender, EventArgs e)
         {
-            string categoria = (string)((Button)sender).Tag;
-            _categoriaCorrente = string.IsNullOrEmpty(categoria) ? null : categoria;
+            _categoriaCorrente = (string)((Button)sender).Tag;
             EvidenziaCategoria();
             MostraPiatti();
         }
@@ -222,7 +208,7 @@ namespace Client
         {
             foreach (Button b in flowCategorie.Controls.OfType<Button>())
             {
-                bool selezionata = (string)b.Tag == (_categoriaCorrente ?? "");
+                bool selezionata = (string)b.Tag == _categoriaCorrente;
                 b.BackColor = selezionata ? Rosso : Color.White;
                 b.ForeColor = selezionata ? Color.White : Color.FromArgb(60, 60, 60);
             }
@@ -239,160 +225,70 @@ namespace Client
             flowPiatti.ResumeLayout();
         }
 
-        // Tile del piatto: foto sopra, nome sotto. Un clic ovunque sul tile aggiunge il piatto al carrello.
-        private Control CreaPulsantePiatto(Piatto p)
+        // Ogni piatto e' un pulsante con la foto sopra e il nome sotto: un clic lo aggiunge al carrello.
+        private Button CreaPulsantePiatto(Piatto p)
         {
-            Panel tile = new Panel();
-            tile.Size = DimensioneTile;
-            tile.Margin = new Padding(8);
-            tile.BackColor = Color.White;
-            tile.Tag = p;
-            tile.Cursor = p.Disponibile ? Cursors.Hand : Cursors.Default;
-            tile.Paint += (s, e) =>
-            {
-                using (Pen penna = new Pen(Color.FromArgb(220, 210, 200)))
-                    e.Graphics.DrawRectangle(penna, 0, 0, tile.Width - 1, tile.Height - 1);
-            };
-
-            PictureBox foto = new PictureBox();
-            foto.SetBounds(9, 9, DimensioneFoto.Width, DimensioneFoto.Height);
-            foto.SizeMode = PictureBoxSizeMode.Normal;
-            foto.BackColor = Color.FromArgb(240, 235, 228);
-            foto.Image = CaricaImmagine(p.Immagine);
-            foto.Tag = p;
-            tile.Controls.Add(foto);
-
-            Label nome = new Label();
-            nome.AutoSize = false;
-            nome.SetBounds(9, 9 + DimensioneFoto.Height + 4, DimensioneFoto.Width, DimensioneTile.Height - DimensioneFoto.Height - 26);
-            nome.Text = p.Disponibile ? p.Nome : p.Nome + " (esaurito)";
-            nome.Font = FontPiatto;
-            nome.ForeColor = p.Disponibile ? Color.FromArgb(40, 40, 40) : Color.Gray;
-            nome.TextAlign = ContentAlignment.TopLeft;
-            nome.UseMnemonic = false;
-            nome.Tag = p;
-            tile.Controls.Add(nome);
-
-            if (p.Disponibile)
-            {
-                tile.Click += PiattoClick;
-                foto.Click += PiattoClick;
-                nome.Click += PiattoClick;
-
-                // evidenzia il tile quando il mouse e' sopra (anche sopra foto e nome)
-                EventHandler entra = (s, e) => tile.BackColor = Color.FromArgb(253, 236, 232);
-                EventHandler esce = (s, e) =>
-                {
-                    if (!tile.ClientRectangle.Contains(tile.PointToClient(Cursor.Position)))
-                        tile.BackColor = Color.White;
-                };
-                tile.MouseEnter += entra;
-                foto.MouseEnter += entra;
-                nome.MouseEnter += entra;
-                tile.MouseLeave += esce;
-                foto.MouseLeave += esce;
-                nome.MouseLeave += esce;
-            }
-            else
-            {
-                foto.Enabled = false; // la foto resta visibile ma il tile non e' cliccabile
-            }
-
-            return tile;
+            Button b = new Button();
+            b.Size = new Size(214, 170);
+            b.Margin = new Padding(8);
+            b.Tag = p;
+            b.Text = p.Disponibile ? p.Nome : p.Nome + " (esaurito)";
+            b.UseMnemonic = false;   // un '&' nel nome non deve diventare una scorciatoia
+            b.Font = FontTesto;
+            b.Image = CaricaImmagine(p.Immagine);
+            b.TextImageRelation = TextImageRelation.ImageAboveText;
+            b.FlatStyle = FlatStyle.Flat;
+            b.FlatAppearance.BorderColor = Color.FromArgb(220, 210, 200);
+            b.FlatAppearance.MouseOverBackColor = Color.FromArgb(253, 236, 232);
+            b.BackColor = Color.White;
+            b.Enabled = p.Disponibile;   // un piatto esaurito non si puo' ordinare
+            b.Click += PiattoClick;
+            return b;
         }
 
         private void PiattoClick(object sender, EventArgs e)
         {
-            Piatto p = (Piatto)((Control)sender).Tag;
+            Piatto p = (Piatto)((Button)sender).Tag;
             AggiungiAlCarrello(p.Id, p.Nome, 1);
         }
 
-        // ---------- Immagini del menu ----------
-
-        // Cerca la cartella img_menu accanto all'exe (copiata dalla build) oppure nelle cartelle superiori
-        // (utile quando si avvia dal progetto in Visual Studio: Client\bin\Debug -> ... -> radice del repo).
-        private string TrovaCartellaImmagini()
-        {
-            if (_cartellaImmagini != null)
-                return _cartellaImmagini;
-
-            string cartella = AppDomain.CurrentDomain.BaseDirectory;
-            for (int i = 0; i < 6 && !string.IsNullOrEmpty(cartella); i++)
-            {
-                string candidata = Path.Combine(cartella, CartellaImmaginiNome);
-                if (Directory.Exists(candidata))
-                    return _cartellaImmagini = candidata;
-
-                DirectoryInfo padre = Directory.GetParent(cartella);
-                cartella = padre == null ? null : padre.FullName;
-            }
-
-            return _cartellaImmagini = ""; // non trovata: i tile restano senza foto
-        }
-
-        // Le foto originali sono grandi (1408x768): le riduco una volta sola e le tengo in cache.
+        // Le foto stanno nella cartella img_menu accanto all'exe (la copia il progetto in fase di build).
+        // Sono grandi (1408x768): le riduco una volta sola e le tengo in memoria.
         private Image CaricaImmagine(string nomeFile)
         {
             if (string.IsNullOrEmpty(nomeFile))
                 return null;
 
-            Image immagine;
-            if (_cacheImmagini.TryGetValue(nomeFile, out immagine))
-                return immagine;
+            Image foto;
+            if (_immagini.TryGetValue(nomeFile, out foto))
+                return foto;
 
-            immagine = null;
-            string cartella = TrovaCartellaImmagini();
-            if (cartella.Length > 0)
+            try
             {
-                string percorso = Path.Combine(cartella, nomeFile);
-                try
+                string percorso = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "img_menu", nomeFile);
+                using (Image originale = Image.FromFile(percorso))   // using: il file si chiude subito
                 {
-                    if (File.Exists(percorso))
+                    foto = new Bitmap(DimensioneFoto.Width, DimensioneFoto.Height);
+                    using (Graphics g = Graphics.FromImage(foto))
                     {
-                        // Leggo da FileStream e chiudo subito il file: cosi' non resta bloccato.
-                        using (FileStream fs = new FileStream(percorso, FileMode.Open, FileAccess.Read, FileShare.Read))
-                        using (Image originale = Image.FromStream(fs))
-                            immagine = Ridimensiona(originale, DimensioneFoto);
+                        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                        g.DrawImage(originale, 0, 0, DimensioneFoto.Width, DimensioneFoto.Height);
                     }
                 }
-                catch (Exception)
-                {
-                    immagine = null; // file rovinato: il tile resta senza foto
-                }
             }
-
-            _cacheImmagini[nomeFile] = immagine;
-            return immagine;
-        }
-
-        // Ridimensiona riempiendo tutta l'area (ritaglia i bordi se il rapporto e' diverso).
-        private static Image Ridimensiona(Image originale, Size dimensione)
-        {
-            Bitmap risultato = new Bitmap(dimensione.Width, dimensione.Height);
-            using (Graphics g = Graphics.FromImage(risultato))
+            catch (Exception)
             {
-                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                g.SmoothingMode = SmoothingMode.HighQuality;
-                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                float scala = Math.Max((float)dimensione.Width / originale.Width, (float)dimensione.Height / originale.Height);
-                float larghezzaOrigine = dimensione.Width / scala;
-                float altezzaOrigine = dimensione.Height / scala;
-                RectangleF origine = new RectangleF(
-                    (originale.Width - larghezzaOrigine) / 2F,
-                    (originale.Height - altezzaOrigine) / 2F,
-                    larghezzaOrigine, altezzaOrigine);
-
-                g.DrawImage(originale, new Rectangle(Point.Empty, dimensione), origine.X, origine.Y,
-                    origine.Width, origine.Height, GraphicsUnit.Pixel);
+                foto = null;   // foto mancante o rovinata: il piatto resta senza foto
             }
-            return risultato;
+
+            _immagini[nomeFile] = foto;
+            return foto;
         }
 
         private static void SvuotaPannello(Control pannello)
         {
             while (pannello.Controls.Count > 0)
-                pannello.Controls[0].Dispose(); // Dispose lo toglie anche dalla collezione
+                pannello.Controls[0].Dispose(); // Dispose lo toglie anche dal pannello
         }
 
         // ---------- Carrello ----------
@@ -422,6 +318,7 @@ namespace Client
             }
             lvCarrello.EndUpdate();
 
+            // dopo aver ricostruito la lista rimetto la selezione, cosi' + e - si possono premere piu' volte
             if (selezionato >= 0 && selezionato < lvCarrello.Items.Count)
                 lvCarrello.Items[selezionato].Selected = true;
 
@@ -484,9 +381,7 @@ namespace Client
                 return;
 
             Ordine ordine = new Ordine();
-            ordine.Righe = _carrello
-                .Select(r => new RigaOrdine { PiattoId = r.PiattoId, NomePiatto = r.NomePiatto, Quantita = r.Quantita })
-                .ToList();
+            ordine.Righe = new List<RigaOrdine>(_carrello);   // copia della lista: dopo l'invio il carrello si svuota
 
             string json = JsonConvert.SerializeObject(ordine);
             if (!_client.Invia(Message.Crea(Comandi.NewOrder, json)))
@@ -512,9 +407,9 @@ namespace Client
 
             ListViewItem item = new ListViewItem(ordine.Ora.ToString("HH:mm"));
             item.SubItems.Add(ordine.Riepilogo());
-            item.SubItems.Add(NomeStato(StatoOrdine.Inviato));
+            item.SubItems.Add("");
             item.Tag = idOrdine;
-            ColoraOrdine(item, StatoOrdine.Inviato);
+            MostraStato(item, StatoOrdine.Inviato);
             lvOrdini.Items.Insert(0, item);
         }
 
@@ -531,8 +426,7 @@ namespace Client
                 if ((string)item.Tag != idOrdine)
                     continue;
 
-                item.SubItems[2].Text = NomeStato(stato);
-                ColoraOrdine(item, stato);
+                MostraStato(item, stato);
 
                 if (stato == StatoOrdine.Pronto)
                     MostraBanner("Il tuo ordine è pronto!");
@@ -544,27 +438,31 @@ namespace Client
             }
         }
 
-        private static string NomeStato(StatoOrdine stato)
+        // Scrive il nome dello stato nella terza colonna e colora la riga.
+        private static void MostraStato(ListViewItem item, StatoOrdine stato)
         {
             switch (stato)
             {
-                case StatoOrdine.InPreparazione: return "In preparazione";
-                case StatoOrdine.Pronto: return "Pronto";
-                case StatoOrdine.Servito: return "Servito";
-                case StatoOrdine.Annullato: return "Annullato";
-                default: return "Inviato";
-            }
-        }
-
-        private static void ColoraOrdine(ListViewItem item, StatoOrdine stato)
-        {
-            switch (stato)
-            {
-                case StatoOrdine.InPreparazione: item.BackColor = Color.LemonChiffon; break;
-                case StatoOrdine.Pronto: item.BackColor = Color.LightGreen; break;
-                case StatoOrdine.Servito: item.BackColor = Color.LightGray; break;
-                case StatoOrdine.Annullato: item.BackColor = Color.MistyRose; break;
-                default: item.BackColor = Color.White; break;
+                case StatoOrdine.InPreparazione:
+                    item.SubItems[2].Text = "In preparazione";
+                    item.BackColor = Color.LemonChiffon;
+                    break;
+                case StatoOrdine.Pronto:
+                    item.SubItems[2].Text = "Pronto";
+                    item.BackColor = Color.LightGreen;
+                    break;
+                case StatoOrdine.Servito:
+                    item.SubItems[2].Text = "Servito";
+                    item.BackColor = Color.LightGray;
+                    break;
+                case StatoOrdine.Annullato:
+                    item.SubItems[2].Text = "Annullato";
+                    item.BackColor = Color.MistyRose;
+                    break;
+                default:
+                    item.SubItems[2].Text = "Inviato";
+                    item.BackColor = Color.White;
+                    break;
             }
         }
 
@@ -590,12 +488,11 @@ namespace Client
             if (_client.Connesso)
                 _client.Disconnetti();
 
-            foreach (Image immagine in _cacheImmagini.Values)
+            foreach (Image foto in _immagini.Values)
             {
-                if (immagine != null)
-                    immagine.Dispose();
+                if (foto != null)
+                    foto.Dispose();
             }
-            _cacheImmagini.Clear();
         }
     }
 }
